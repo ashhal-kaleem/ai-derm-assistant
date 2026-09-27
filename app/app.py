@@ -107,13 +107,6 @@ with st.sidebar:
     st.markdown(f"**Advisory:** `Gemini 2.0 Flash ({gemini_status})`")
     st.divider()
 
-    st.subheader("🧪 Quick Test Samples")
-    sample_choice = st.radio(
-        "Select sample to load:",
-        ["None (Upload Your Own)", "Melanoma (mel)", "Basal Cell Carcinoma (bcc)", "Melanocytic Nevus (nv)", "Actinic Keratosis (akiec)"],
-        index=0
-    )
-    st.divider()
     st.caption("DermAssist AI v1.0.0 — Universal Sovereign Protocol")
 
 # Main Navigation Tabs
@@ -126,27 +119,13 @@ tab_analyze, tab_catalog, tab_history = st.tabs([
 # TAB 1: Diagnostic Analysis
 with tab_analyze:
     st.markdown('<div class="main-header">Skin Lesion Diagnostic Assistant</div>', unsafe_allow_html=True)
-    st.markdown('<div class="sub-header">Upload a high-resolution dermoscopic image or select a sample from the sidebar to analyze.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="sub-header">Upload a high-resolution clinical dermoscopic image of the skin lesion to analyze.</div>', unsafe_allow_html=True)
 
     input_image: Optional[Image.Image] = None
     image_bytes: Optional[bytes] = None
 
-    if sample_choice != "None (Upload Your Own)":
-        sample_map = {
-            "Melanoma (mel)": "app/samples/sample_melanoma.jpg",
-            "Basal Cell Carcinoma (bcc)": "app/samples/sample_bcc.jpg",
-            "Melanocytic Nevus (nv)": "app/samples/sample_nevus.jpg",
-            "Actinic Keratosis (akiec)": "app/samples/sample_akiec.jpg"
-        }
-        sample_path = sample_map.get(sample_choice)
-        if sample_path and os.path.exists(sample_path):
-            input_image = Image.open(sample_path)
-            with open(sample_path, "rb") as f:
-                image_bytes = f.read()
-            st.info(f"Loaded preset sample: **{sample_choice}**")
-
     uploaded_file = st.file_uploader(
-        "Or upload a lesion photograph (JPEG, PNG):",
+        "Upload Clinical Dermoscopic Image (JPEG, PNG):",
         type=["jpg", "jpeg", "png"],
         help="Clear, focused dermoscopic or close-up image of the skin lesion."
     )

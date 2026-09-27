@@ -11,3 +11,5 @@ data/*.db
 .idea/
 *.log
 !decisions.log
+.venv/
+venv/

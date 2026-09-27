@@ -40,7 +40,7 @@ class ONNXInferenceEngine:
 
     def _initialize_session(self, model_path: Optional[str], hf_repo_id: Optional[str]) -> None:
         """Initialize ONNX session from file or stream from HuggingFace Hub."""
-        resolved_path = model_path
+        resolved_path = model_path or "checkpoints/efficientnet_b4_ham10000.onnx"
 
         # If HF repo is configured and no local file exists, download on boot
         if not resolved_path and hf_repo_id and hf_hub_download:
@@ -74,31 +74,10 @@ class ONNXInferenceEngine:
         """
         tensor = preprocess_image(image)
         
-        if self.session is not None:
-            outputs = self.session.run([self.output_name], {self.input_name: tensor})
-            logits = outputs[0][0]
-            # Generate feature activation approximation
-            feature_slice = np.abs(tensor[0]).mean(axis=0)
-            return logits, feature_slice
-        else:
-            # Deterministic, highly realistic analytical skin lesion feature extraction
-            # used when weights have not been downloaded yet
-            rgb = np.array(image.convert("RGB").resize((64, 64)), dtype=np.float32)
-            r_mean = float(np.mean(rgb[:, :, 0]))
-            g_mean = float(np.mean(rgb[:, :, 1]))
-            b_mean = float(np.mean(rgb[:, :, 2]))
-            std_val = float(np.std(rgb))
-            
-            # Baseline feature vector reflecting HAM10000 clinical prevalence
-            logits = np.array([
-                -0.5 + (r_mean - g_mean) * 0.02,   # akiec: scaly erythema
-                0.2 + (r_mean - b_mean) * 0.015,   # bcc: translucent telangiectasia
-                0.5 + (std_val * 0.02),            # bkl: heterogeneous keratosis
-                -1.2,                              # df: rare nodule
-                1.5 if std_val > 45 else -0.8,     # mel: variegation/asymmetry
-                2.8 - (std_val * 0.01),            # nv: common uniform nevus
-                -1.5 + (r_mean / (g_mean + 1.0))   # vasc: red blood lacunae
-            ], dtype=np.float32)
-            
-            feature_slice = rgb.mean(axis=-1)
-            return logits, feature_slice
+        if self.session is None:
+            raise RuntimeError("Production ONNX session not loaded. Ensure checkpoints/efficientnet_b4_ham10000.onnx exists.")
+        outputs = self.session.run(None, {self.input_name: tensor})
+        logits = outputs[0][0]
+        # Generate feature activation approximation
+        feature_slice = np.mean(outputs[1][0], axis=0) if len(outputs) > 1 else np.mean(np.abs(tensor[0]), axis=0)
+        return logits, feature_slice

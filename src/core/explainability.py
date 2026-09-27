@@ -54,30 +54,6 @@ def generate_gradcam_overlay(
     return np.clip(blended, 0, 255).astype(np.uint8)
 
 
-def generate_synthetic_saliency(image_rgb: np.ndarray, center_focus: float = 0.6) -> np.ndarray:
-    """Generate a gaussian-weighted morphological saliency map for testing/fallback.
-    
-    Uses radial distance and local gradient intensity to highlight suspicious lesion centers.
-    """
-    h, w = image_rgb.shape[:2]
-    y_coords, x_coords = np.ogrid[:h, :w]
-    center_y, center_x = h / 2.0, w / 2.0
-    
-    # Radial Gaussian Falloff centered on lesion
-    sigma = min(h, w) * center_focus * 0.4
-    dist_sq = (x_coords - center_x) ** 2 + (y_coords - center_y) ** 2
-    gaussian = np.exp(-dist_sq / (2 * (sigma ** 2)))
-    
-    # Morphological gradient contrast
-    gray = cv2.cvtColor(image_rgb, cv2.COLOR_RGB2GRAY).astype(np.float32)
-    grad_x = cv2.Sobel(gray, cv2.CV_32F, 1, 0, ksize=3)
-    grad_y = cv2.Sobel(gray, cv2.CV_32F, 0, 1, ksize=3)
-    grad_mag = np.sqrt(grad_x ** 2 + grad_y ** 2)
-    grad_norm = grad_mag / (np.max(grad_mag) + 1e-6)
-    
-    combined = 0.7 * gaussian + 0.3 * grad_norm
-    return normalize_cam_map(combined)
-
 
 def image_to_png_bytes(image_np: np.ndarray) -> bytes:
     """Encode an RGB uint8 image array to PNG byte stream."""

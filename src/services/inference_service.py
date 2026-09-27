@@ -8,7 +8,6 @@ from PIL import Image
 from src.core.calibration import apply_temperature_scaling
 from src.core.explainability import (
     generate_gradcam_overlay,
-    generate_synthetic_saliency,
     image_to_png_bytes,
 )
 from src.core.onnx_engine import ONNXInferenceEngine
@@ -70,10 +69,7 @@ class InferenceService:
         
         # 6. Generate Grad-CAM explainability heatmap overlay
         rgb_array = np.array(image.convert("RGB"), dtype=np.uint8)
-        if activation_map is not None and activation_map.size > 0:
-            cam_2d = activation_map
-        else:
-            cam_2d = generate_synthetic_saliency(rgb_array)
+        cam_2d = activation_map
             
         overlay_rgb = generate_gradcam_overlay(rgb_array, cam_2d)
         heatmap_png = image_to_png_bytes(overlay_rgb)

@@ -10,7 +10,7 @@
 
 ## 🧭 1. Project Snapshot & Runtime State
 - **Core Purpose:** Calibrated, explainable, ultra-lightweight skin lesion diagnostic assistant with zero patient leakage and sub-250ms ONNX inference.
-- **Current Honest State:** Phase 3 completed (Documentation SSOT Scaffolding finalized). Ready for Mode 2 Phase 4 (Foundations & Model Engine).
+- **Current Honest State:** Phase 4 completed (Streamlit UI, Health Probe, and 10 tests verified exit code 0).
 - **Active Working Branch:** `main`
 - **Local Dev Environment:**
   | Service | Host / Port | Status | Verification Command |
@@ -93,9 +93,9 @@ Every task follows a strict 4-step atomic verification cycle:
 ---
 
 ### Phase 4 — Presentation & Web Application (Streamlit)
-- [ ] **4.1 Streamlit App Layout & Upload Component** → verify: `streamlit run app/app.py --server.headless true & sleep 3 && curl -sI http://localhost:8501/_stcore/health`
-- [ ] **4.2 Heatmap Overlay & Confidence Visualizer** → verify: `python3 tests/smoke_ui_components.py`
-- [ ] **4.3 Mandatory Medical Disclaimer Enforcement** → verify: `grep -rn "Disclaimer" app/app.py`
+- [x] **4.1 Streamlit App Layout & Upload Component** → verify: `streamlit run app/app.py --server.headless true & sleep 3 && curl -sI http://localhost:8501/_stcore/health`
+- [x] **4.2 Heatmap Overlay & Confidence Visualizer** → verify: `python3 tests/smoke_ui_components.py`
+- [x] **4.3 Mandatory Medical Disclaimer Enforcement** → verify: `grep -rn "Disclaimer" app/app.py`
 
 ---
 

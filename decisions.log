@@ -1,0 +1,7 @@
+# DECISIONS.LOG — DermAssist AI
+# Format: [ISO-TIMESTAMP] [SCOPE: LOCAL|GLOBAL] [ID] INVARIANT: description | WHY: rationale | REVERSAL: condition
+
+2026-09-27T16:45:00Z [LOCAL] [DEC-001] INVARIANT: Split HAM10000 strictly by lesion_id using StratifiedGroupKFold | WHY: Prevents multi-image patient data leakage that artificially inflates accuracy | REVERSAL: If dataset provenance guarantees 1 image per patient
+2026-09-27T16:45:00Z [LOCAL] [DEC-002] INVARIANT: Serve model using ONNX Runtime for production inference | WHY: Reduces CPU latency from ~1.2s to <250ms and dependency size by 80% | REVERSAL: If quantization degrades Melanoma recall by >1.5%
+2026-09-27T16:45:00Z [LOCAL] [DEC-003] INVARIANT: Always scale raw logits with optimal temperature scalar before UI display | WHY: Prevents false overconfidence on ambiguous lesions | REVERSAL: None (medical calibration invariant)
+2026-09-27T16:55:00Z [LOCAL] [DEC-004] INVARIANT: System is 100% Stateless Cloud-First; Database & Media Storage strictly reside in Supabase (Cloud PostgreSQL + Supabase Storage); Model dynamically streamed via HuggingFace Hub | WHY: Eliminates local storage dependencies, enables immediate horizontal scaling on HuggingFace Spaces/Vercel | REVERSAL: If offline air-gapped deployment is required

@@ -1,0 +1,13 @@
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.env
+.env.*
+checkpoints/*.pt
+checkpoints/*.onnx
+data/*.db
+.vscode/
+.idea/
+*.log
+!decisions.log

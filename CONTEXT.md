@@ -71,24 +71,24 @@ Every task follows a strict 4-step atomic verification cycle:
 ## 📋 5. Phased Build Roadmap & Verification Checklist
 
 ### Phase 1 — Foundations & External Dependency Verification
-- [ ] **1.1 Requirements & Python Environment** → verify: `pip check`
-- [ ] **1.2 Supabase Cloud Connection & Storage** → verify: `python3 -c "import supabase; print(supabase.__name__)"`
-- [ ] **1.3 Static Knowledge Cards JSON** → verify: `python3 -m json.tool app/knowledge_cards.json > /dev/null`
+- [x] **1.1 Requirements & Python Environment** → verify: `pip check`
+- [x] **1.2 Supabase Cloud Connection & Storage** → verify: `python3 -c "import supabase; print(supabase.__name__)"`
+- [x] **1.3 Static Knowledge Cards JSON** → verify: `python3 -m json.tool app/knowledge_cards.json > /dev/null`
 
 ---
 
 ### Phase 2 — Core Algorithmic & ML Engine
-- [ ] **2.1 Dataset Loader & StratifiedGroupKFold** → verify: `pytest tests/test_dataset_leakage.py -v`
-- [ ] **2.2 Temperature Scaling & ECE Module** → verify: `pytest tests/test_calibration.py -v`
-- [ ] **2.3 ONNX Inference Engine Wrapper** → verify: `pytest tests/test_onnx_engine.py -v`
-- [ ] **2.4 Grad-CAM Heatmap Extraction** → verify: `pytest tests/test_explainability.py -v`
+- [x] **2.1 Dataset Loader & StratifiedGroupKFold** → verify: `pytest tests/test_dataset_leakage.py -v`
+- [x] **2.2 Temperature Scaling & ECE Module** → verify: `pytest tests/test_calibration.py -v`
+- [x] **2.3 ONNX Inference Engine Wrapper** → verify: `pytest tests/test_onnx_engine.py -v`
+- [x] **2.4 Grad-CAM Heatmap Extraction** → verify: `pytest tests/test_explainability.py -v`
 
 ---
 
 ### Phase 3 — Service Layer & External Adapters
-- [ ] **3.1 InferenceService Facade** → verify: `pytest tests/test_inference_service.py -v`
-- [ ] **3.2 Gemini Clinical Advisor Adapter** → verify: `pytest tests/test_gemini_service.py -v`
-- [ ] **3.3 History & Scan Repository** → verify: `pytest tests/test_history_service.py -v`
+- [x] **3.1 InferenceService Facade** → verify: `pytest tests/test_inference_service.py -v`
+- [x] **3.2 Gemini Clinical Advisor Adapter** → verify: `pytest tests/test_gemini_service.py -v`
+- [x] **3.3 History & Scan Repository** → verify: `pytest tests/test_history_service.py -v`
 
 ---
 
@@ -100,5 +100,5 @@ Every task follows a strict 4-step atomic verification cycle:
 ---
 
 ### Phase 5 — Quality Review, Testing & Release
-- [ ] **5.1 Zero Patient Leakage Verification Gate** → verify: `pytest tests/test_dataset_leakage.py`
-- [ ] **5.2 Calibration ECE Target Gate (< 5%)** → verify: `pytest tests/test_calibration.py`
+- [x] **5.1 Zero Patient Leakage Verification Gate** → verify: `pytest tests/test_dataset_leakage.py`
+- [x] **5.2 Calibration ECE Target Gate (< 5%)** → verify: `pytest tests/test_calibration.py`

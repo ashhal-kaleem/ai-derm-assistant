@@ -1,6 +1,11 @@
 """Supabase Cloud Database & Storage Client Adapter for DermAssist AI."""
 
 import os
+try:
+    from dotenv import load_dotenv
+    load_dotenv(".env", override=True)
+except ImportError:
+    pass
 import uuid
 from typing import Any, Dict, List, Optional
 

@@ -2,6 +2,11 @@
 
 import io
 import os
+try:
+    from dotenv import load_dotenv
+    load_dotenv(".env", override=True)
+except ImportError:
+    pass
 from typing import Optional
 import numpy as np
 import pandas as pd

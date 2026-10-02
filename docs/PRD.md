@@ -34,6 +34,7 @@ Skin cancers (melanoma, basal cell carcinoma) are among the most common malignan
 | **Deployment Footprint** | Heavy DL Framework (>1 GB)| < 100 MB | Clean Container / Environment Audit |
 
 ### 1.5 Positive Non-Goals (Explicitly Out of Scope)
+
 > **Anti-Scope-Creep Law**: Positively stated boundaries.
 - **Do NOT provide definitive medical diagnoses**: The system is strictly educational and advisory; it must mandate licensed dermatologist follow-up.
 - **Do NOT process non-skin medical imagery**: The system rejects non-dermoscopic or non-cutaneous images (radiology, fundus, pathology slides).

@@ -14,3 +14,4 @@ data/*.db
 .venv/
 venv/
 !checkpoints/efficientnet_b4_ham10000.onnx
+!.env.example

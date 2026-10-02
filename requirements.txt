@@ -11,3 +11,5 @@ pytest>=7.4.0
 supabase>=2.3.0
 huggingface-hub>=0.20.0
 python-dotenv>=1.0.0
+fastapi>=0.110.0
+python-multipart>=0.0.9

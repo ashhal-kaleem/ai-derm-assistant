@@ -89,6 +89,7 @@ Every task follows a strict 4-step atomic verification cycle:
 - [x] **3.1 InferenceService Facade** → verify: `pytest tests/test_inference_service.py -v`
 - [x] **3.2 Groq Clinical Advisor Adapter** → verify: `pytest tests/test_services.py -v`
 - [x] **3.3 History & Scan Repository** → verify: `pytest tests/test_history_service.py -v`
+- [x] **3.4 FastAPI Production REST API Layer** → verify: `pytest tests/test_api.py -v`
 
 ---
 

@@ -27,6 +27,7 @@
 |---|---|---|
 | **Install Dependencies** | `pip install -r requirements.txt` | Locked virtual environment |
 | **Run Dev / Local App** | `streamlit run app/app.py` | Local Streamlit UI on :8501 |
+| **Run REST API Server** | `uvicorn src.api.main:app --port 8000 --reload` | FastAPI REST API on :8000 (/docs) |
 | **Run All Tests** | `pytest tests/ -v` | Full test suite verification |
 | **Run Leakage Test** | `pytest tests/test_dataset_leakage.py -v` | Validates 0 patient overlap |
 | **Run Calibration Test** | `pytest tests/test_calibration.py -v` | Validates ECE optimization |
@@ -54,6 +55,7 @@ ai-derm-assistant/
 │   ├── PRD.md                 # Product & Business SSOT
 │   └── architecture.md        # Technical SSOT: topology, schemas, runbook
 ├── src/                       # Core ML Engine, domain entities & services
+│   ├── api/                  # FastAPI REST endpoints & schemas
 │   ├── domain/                # Pure business logic & clinical schemas
 │   ├── core/                  # ONNX engine, calibration, Grad-CAM, dataset
 │   ├── services/              # InferenceService, GroqService, HistoryService

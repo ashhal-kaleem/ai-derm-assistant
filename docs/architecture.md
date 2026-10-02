@@ -149,6 +149,10 @@ DIAGNOSIS_CLASSES = {
 
 ```text
 src/
+├── api/                         # FastAPI REST Endpoints & Schemas
+│   ├── main.py                  # FastAPI entrypoint & CORS middleware
+│   ├── routes.py                # /health, /predict, /clinical-summary, /history
+│   └── schemas.py               # Pydantic request & response schemas
 ├── domain/                      # Pure business rules & schemas (Zero IO / Zero framework imports)
 │   ├── models.py                # PredictionResult, DiagnosisClass, ScanRecord dataclasses
 │   └── knowledge_cards.py       # 7-Class static clinical cards & permanent disclaimers

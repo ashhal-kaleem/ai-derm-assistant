@@ -6,6 +6,8 @@ try:
     load_dotenv(".env", override=True)
 except ImportError:
     pass
+import logging
+logger = logging.getLogger(__name__)
 import uuid
 from typing import Any, Dict, List, Optional
 
@@ -31,7 +33,7 @@ class SupabaseCloudClient:
         if self.url and self.key and create_client is not None:
             try:
                 self.client = create_client(self.url, self.key)
-            except Exception:
+            except Exception as e:
                 self.client = None
 
     @property
@@ -56,7 +58,8 @@ class SupabaseCloudClient:
                     file_options={"content-type": content_type}
                 )
                 return self.client.storage.from_(bucket).get_public_url(unique_path)
-            except Exception:
+            except Exception as e:
+                logger.error(f"Storage upload error: {e}")
                 pass
         
         # Cloud simulation / safe fallback when credentials are not yet configured
@@ -69,9 +72,8 @@ class SupabaseCloudClient:
                 response = self.client.table("scans").insert(scan_data).execute()
                 if response.data and len(response.data) > 0:
                     return response.data[0]
-            except Exception:
-                pass
-        
+            except Exception as e:
+                logger.error(f"Database insert error: {e}")
         # In-memory tracking for seamless local evaluation
         self._memory_store.insert(0, scan_data)
         return scan_data
@@ -88,6 +90,6 @@ class SupabaseCloudClient:
                     .execute()
                 )
                 return response.data or []
-            except Exception:
-                pass
+            except Exception as e:
+                logger.error(f"Database fetch error: {e}")
         return self._memory_store[:limit]

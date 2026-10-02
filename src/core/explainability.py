@@ -3,6 +3,7 @@
 import io
 from typing import Optional
 import cv2
+cv2.setNumThreads(1)
 import numpy as np
 from PIL import Image
 

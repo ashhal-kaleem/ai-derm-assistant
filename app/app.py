@@ -142,7 +142,17 @@ with tab_analyze:
     )
 
     if uploaded_file is not None:
-        image_bytes = uploaded_file.getvalue()
+        raw_val = uploaded_file.getvalue()
+        if len(raw_val) > 8 * 1024 * 1024:
+            st.error("Uploaded image exceeds 8MB limit. Please upload an image under 8MB.")
+        else:
+            try:
+                test_img = Image.open(io.BytesIO(raw_val))
+                test_img.verify()
+                image_bytes = raw_val
+                input_image = Image.open(io.BytesIO(image_bytes))
+            except Exception:
+                st.error("Invalid or corrupted image file. Please upload a valid JPEG/PNG dermoscopic image.")
         input_image = Image.open(io.BytesIO(image_bytes))
 
     if input_image is not None and image_bytes is not None:

@@ -56,10 +56,10 @@ ai-derm-assistant/
 │   └── architecture.md        # Technical SSOT: topology, schemas, runbook
 ├── src/                       # Core ML Engine, domain entities & services
 │   ├── api/                  # FastAPI REST endpoints & schemas
-│   ├── domain/                # Pure business logic & clinical schemas
-│   ├── core/                  # ONNX engine, calibration, Grad-CAM, dataset
+│   ├── domain/                # Pure business logic, calibration │   ├── domain/                # Pure business logic & clinical schemas schemas
+│   ├── core/                  # Settings (config.py), Lifespan │   ├── core/                  # ONNX engine, calibration, Grad-CAM, dataset RFC 9457 exceptions
 │   ├── services/              # InferenceService, GroqService, HistoryService
-│   └── infrastructure/        # Supabase Cloud Client & Repositories
+│   └── infrastructure/        # ONNX runtime engine, Grad-CAM │   └── infrastructure/        # Supabase Cloud Client & Repositories Supabase repo
 ├── app/                       # Streamlit Web Presentation Layer
 ├── notebooks/                 # EDA, training, and ablation analysis
 ├── tests/                     # Automated test gates (leakage, calibration, inference)

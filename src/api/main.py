@@ -2,6 +2,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from src.api.routes import router
+from src.core.lifespan import lifespan
+from src.core.exceptions import register_exception_handlers
 
 app = FastAPI(
     title="DermAssist AI — Clinical Inference API",
@@ -9,6 +11,7 @@ app = FastAPI(
     version="1.0.0",
     docs_url="/docs",
     redoc_url="/redoc",
+    lifespan=lifespan,
 )
 
 # Cross-Origin Resource Sharing (CORS) for React, Next.js, Mobile & Streamlit
@@ -21,6 +24,7 @@ app.add_middleware(
 )
 
 app.include_router(router)
+register_exception_handlers(app)
 
 
 if __name__ == "__main__":

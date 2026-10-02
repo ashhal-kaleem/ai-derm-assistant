@@ -5,12 +5,12 @@ from typing import Optional
 import numpy as np
 from PIL import Image
 
-from src.core.calibration import apply_temperature_scaling
-from src.core.explainability import (
+from src.domain.calibration import apply_temperature_scaling
+from src.infrastructure.explainability import (
     generate_gradcam_overlay,
     image_to_png_bytes,
 )
-from src.core.onnx_engine import ONNXInferenceEngine
+from src.infrastructure.onnx_engine import ONNXInferenceEngine
 from src.domain.models import (
     CLASS_NAMES,
     DIAGNOSIS_CATALOG,

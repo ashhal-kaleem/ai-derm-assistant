@@ -21,31 +21,7 @@ from src.services.inference_service import InferenceService
 
 router = APIRouter()
 
-# Singletons for services
-_inference_service: Optional[InferenceService] = None
-_groq_service: Optional[GroqService] = None
-_history_service: Optional[HistoryService] = None
-
-
-def get_inference_service() -> InferenceService:
-    global _inference_service
-    if _inference_service is None:
-        _inference_service = InferenceService()
-    return _inference_service
-
-
-def get_groq_service() -> GroqService:
-    global _groq_service
-    if _groq_service is None:
-        _groq_service = GroqService()
-    return _groq_service
-
-
-def get_history_service() -> HistoryService:
-    global _history_service
-    if _history_service is None:
-        _history_service = HistoryService()
-    return _history_service
+from src.api.dependencies import get_inference_service, get_groq_service, get_history_service
 
 
 @router.get("/health", response_model=HealthResponse, tags=["Monitoring"])

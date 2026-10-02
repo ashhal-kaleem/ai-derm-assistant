@@ -84,5 +84,6 @@ class InferenceService:
             uncertainty_score=normalized_uncertainty,
             probabilities=class_prob_list,
             saliency_heatmap_bytes=heatmap_png,
+            clinical_summary=None,
             gemini_summary=None
         )

@@ -21,7 +21,7 @@ import streamlit as st
 
 from src.domain.knowledge_cards import MANDATORY_MEDICAL_DISCLAIMER, STATIC_KNOWLEDGE_CARDS
 from src.domain.models import DIAGNOSIS_CATALOG, RiskLevel
-from src.services.gemini_service import GeminiService
+from src.services.groq_service import GroqService
 from src.services.history_service import HistoryService
 from src.services.inference_service import InferenceService
 
@@ -94,11 +94,11 @@ st.markdown("""
 @st.cache_resource
 def get_services():
     inference_svc = InferenceService(temperature=1.25)
-    gemini_svc = GeminiService()
+    groq_svc = GroqService()
     history_svc = HistoryService()
-    return inference_svc, gemini_svc, history_svc
+    return inference_svc, groq_svc, history_svc
 
-inference_service, gemini_service, history_service = get_services()
+inference_service, groq_service, history_service = get_services()
 
 # Permanent Medical Disclaimer (Law #4)
 st.markdown(f'<div class="disclaimer-box">{MANDATORY_MEDICAL_DISCLAIMER}</div>', unsafe_allow_html=True)
@@ -114,8 +114,8 @@ with st.sidebar:
     st.markdown("**Calibration:** `T* = 1.25 (Temperature Scaled)`")
     supabase_status = "🟢 Connected" if history_service.client.is_connected else "🟡 Cloud Fallback"
     st.markdown(f"**Database:** `Supabase ({supabase_status})`")
-    gemini_status = "🟢 Active" if gemini_service.client is not None else "🟡 Static Reference Fallback"
-    st.markdown(f"**Advisory:** `Gemini 2.0 Flash ({gemini_status})`")
+    groq_status = "🟢 Active" if groq_service.client is not None else "🟡 Static Reference Fallback"
+    st.markdown(f"**Advisory:** `Groq Llama 3.3 70B ({groq_status})`")
     st.divider()
 
     st.caption("DermAssist AI v1.0.0 — Universal Sovereign Protocol")
@@ -164,8 +164,8 @@ with tab_analyze:
                 prediction = inference_service.predict(input_image)
                 
                 # Generate clinical summary
-                summary = gemini_service.generate_clinical_summary(prediction)
-                prediction.gemini_summary = summary
+                summary = groq_service.generate_clinical_summary(prediction)
+                prediction.clinical_summary = summary
                 
                 # Persist to cloud storage and database
                 scan_record = history_service.record_scan(
@@ -225,7 +225,7 @@ with tab_analyze:
             st.dataframe(prob_df, use_container_width=True, hide_index=True)
             st.bar_chart(prob_df.set_index("Diagnosis")["Calibrated Probability (%)"], color="#1E88E5")
 
-            # Gemini / Clinical Advisory Report
+            # Groq LPU Clinical Advisory Report
             st.subheader("🩺 Clinical Advisory Report")
             st.markdown(summary)
 

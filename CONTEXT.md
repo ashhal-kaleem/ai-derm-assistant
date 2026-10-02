@@ -48,7 +48,7 @@ Canonical project nouns to eliminate semantic drift, schema naming bugs, and LLM
   - `docs/architecture.md` — Complete System Blueprint & Schemas
   - `AGENTS.md` — Master Developer Handbook & Invariants
 - **Active Blockers & Pending Decisions (Awaiting Human):**
-  - None. Options 1 (ONNX Runtime) and 3 (Gemini 2.0 Flash API) approved by user.
+  - None. Options 1 (ONNX Runtime) and 3 (Groq LPU (llama-3.3-70b-versatile)) approved by user.
 - **Active Gotchas & Undocumented Quirks:**
   - Model training conducted offline on Kaggle T4 GPU; local application environment strictly runs `onnxruntime` on CPU.
 - **Immediate Next Step & Scope Bounding:**
@@ -87,7 +87,7 @@ Every task follows a strict 4-step atomic verification cycle:
 
 ### Phase 3 — Service Layer & External Adapters
 - [x] **3.1 InferenceService Facade** → verify: `pytest tests/test_inference_service.py -v`
-- [x] **3.2 Gemini Clinical Advisor Adapter** → verify: `pytest tests/test_gemini_service.py -v`
+- [x] **3.2 Groq Clinical Advisor Adapter** → verify: `pytest tests/test_services.py -v`
 - [x] **3.3 History & Scan Repository** → verify: `pytest tests/test_history_service.py -v`
 
 ---

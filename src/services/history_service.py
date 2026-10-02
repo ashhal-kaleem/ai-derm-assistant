@@ -25,7 +25,8 @@ class HistoryService:
             temperature=prediction.temperature,
             uncertainty_score=prediction.uncertainty_score,
             risk_level=prediction.risk_level.value,
-            gemini_summary=prediction.gemini_summary
+            clinical_summary=prediction.clinical_summary or prediction.gemini_summary,
+            gemini_summary=prediction.clinical_summary or prediction.gemini_summary
         )
 
         # 1. Upload original lesion image to Supabase Storage

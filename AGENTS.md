@@ -39,7 +39,7 @@
 ## 🧭 System Overview & Architecture Summary
 - **Domain**: AI Dermatology Assistant & Skin Lesion Diagnostic Support (HAM10000 benchmark)
 - **Target Archetype**: Web / Machine Learning Inference System (Archetypes 5 & 6)
-- **Core Architecture**: Modular Clean Architecture (`src/` domain engine, ONNX inference runtime, Gemini clinical adapter, Streamlit UI)
+- **Core Architecture**: Modular Clean Architecture (`src/` domain engine, ONNX inference runtime, Groq LPU clinical adapter, Streamlit UI)
 - **Primary Specifications**: Read `docs/architecture.md` and `docs/PRD.md` before making architectural decisions.
 - **Living Memory**: Read `CONTEXT.md` at the start of every session; update it before completing work.
 - **Decisions Memory**: Inspect `decisions.log` for past project invariants.
@@ -56,7 +56,7 @@ ai-derm-assistant/
 ├── src/                       # Core ML Engine, domain entities & services
 │   ├── domain/                # Pure business logic & clinical schemas
 │   ├── core/                  # ONNX engine, calibration, Grad-CAM, dataset
-│   ├── services/              # InferenceService, GeminiService, HistoryService
+│   ├── services/              # InferenceService, GroqService, HistoryService
 │   └── infrastructure/        # Supabase Cloud Client & Repositories
 ├── app/                       # Streamlit Web Presentation Layer
 ├── notebooks/                 # EDA, training, and ablation analysis

@@ -21,7 +21,7 @@ Skin cancers (melanoma, basal cell carcinoma) are among the most common malignan
 
 ### 1.3 Target Audience & Primary ICP
 - **Primary ICP**: Triage medical students, general practitioners, teledermatology clinics, and health-conscious individuals seeking educational pre-screening.
-- **Core Value Differentiator**: Patient-aware honesty (leakage-free evaluation), calibrated probabilities via Temperature Scaling, epistemic uncertainty flagging via Monte Carlo Dropout, visual Grad-CAM transparency, and dynamic Gemini-powered patient reports—running on ultra-fast ONNX runtime with zero infrastructure costs.
+- **Core Value Differentiator**: Patient-aware honesty (leakage-free evaluation), calibrated probabilities via Temperature Scaling, epistemic uncertainty flagging via Monte Carlo Dropout, visual Grad-CAM transparency, and dynamic Groq-powered patient reports—running on ultra-fast ONNX runtime with zero infrastructure costs.
 
 ### 1.4 Goals & Measurable Success Metrics (KPIs)
 
@@ -39,7 +39,7 @@ Skin cancers (melanoma, basal cell carcinoma) are among the most common malignan
 - **Do NOT provide definitive medical diagnoses**: The system is strictly educational and advisory; it must mandate licensed dermatologist follow-up.
 - **Do NOT process non-skin medical imagery**: The system rejects non-dermoscopic or non-cutaneous images (radiology, fundus, pathology slides).
 - **Do NOT build a native iOS/Android binary in v1.0**: Focus exclusively on a responsive Web / Streamlit interface with optional REST API hooks.
-- **Do NOT execute real-time multi-pass MC Dropout in production web UI**: Restrict web UI to single-pass calibrated ONNX inference with static/Gemini explanations to preserve sub-300ms responsiveness; MC Dropout is reserved for offline/batch evaluation.
+- **Do NOT execute real-time multi-pass MC Dropout in production web UI**: Restrict web UI to single-pass calibrated ONNX inference with static/Groq explanations to preserve sub-300ms responsiveness; MC Dropout is reserved for offline/batch evaluation.
 - **Do NOT implement complex multi-tenant billing or paid paywalls**: The application runs 100% free-tier and open-source.
 
 ---
@@ -53,7 +53,7 @@ Skin cancers (melanoma, basal cell carcinoma) are among the most common malignan
 
 ### 2.2 Operational Assumptions & Prerequisites
 - **Input Nature**: For optimal reliability, images should be close-up dermatoscopic or macro-lens photographs. Regular mobile camera photos are accepted but trigger explicit low-fidelity warnings.
-- **External API Keys**: Optional Google Gemini API key provided via environment variable (`GEMINI_API_KEY`) for dynamic clinical reports. If absent, system gracefully falls back to verified static knowledge cards.
+- **External API Keys**: Groq API key provided via environment variable (`GROQ_API_KEY`) for dynamic clinical reports. If absent, system gracefully falls back to verified static knowledge cards.
 
 ---
 
@@ -70,7 +70,7 @@ Skin cancers (melanoma, basal cell carcinoma) are among the most common malignan
 | **F-03** | Grad-CAM Saliency Overlay | `P0` | User views side-by-side original image and Grad-CAM attention heatmap highlighting active regions. | `[ ] Unverified` |
 | **F-04** | Static Knowledge Card & Disclaimer | `P0` | System displays permanent, unclosable medical disclaimer and structured clinical overview for predicted class. | `[ ] Unverified` |
 | **F-05** | ONNX Runtime Acceleration | `P0` | Inference executes in < 250ms on CPU using quantized/optimized ONNX model weights. | `[ ] Unverified` |
-| **F-06** | Gemini Clinical Advisory Report | `P1` | System generates a structured patient summary and recommended next steps via Gemini 2.0 Flash API. | `[ ] Unverified` |
+| **F-06** | Groq Clinical Advisory Report | `P1` | System generates a structured patient summary and recommended next steps via Groq LPU (llama-3.3-70b-versatile). | `[ ] Unverified` |
 | **F-07** | Scan History & Persistent Logging | `P1` | Scans and heatmaps are persisted to Supabase Cloud DB & Storage with zero local disk footprint. | `[ ] Unverified` |
 | **F-08** | Batch Evaluation & ECE Reporting | `P1` | Researcher / student runs evaluation suite verifying zero data leakage and post-temperature ECE. | `[ ] Unverified` |
 | **F-09** | Fitzpatrick Skin-Type Bias Audit | `P2` | System warns on extreme phototypes or logs subgroup error disparities. | `[ ] Unverified` |
@@ -101,18 +101,18 @@ Skin cancers (melanoma, basal cell carcinoma) are among the most common malignan
     - **When** the user attempts upload,
     - **Then** the system catches the format error, returns an inline user-friendly alert, logs zero crash, and maintains UI stability.
 
-### 🚀 Journey 2 (P1): Gemini-Enhanced Doctor-Ready Clinical Summary
+### 🚀 Journey 2 (P1): Groq-Enhanced Doctor-Ready Clinical Summary
 - **Actor**: Patient / Clinician wanting actionable interpretation
-- **Preconditions**: Valid prediction computed; `GEMINI_API_KEY` configured.
+- **Preconditions**: Valid prediction computed; `GROQ_API_KEY` configured.
 - **Step-by-Step Flow**:
   1. Prediction completes with class `bcc` (Basal Cell Carcinoma) at 91% confidence.
   2. System packages prediction, risk tier, and visual description into a structured prompt.
-  3. Gemini 2.0 Flash streams a formatted report: Overview, ABCDE characteristics, What to Ask Your Doctor, Urgency Level.
+  3. Groq LPU (llama-3.3-70b-versatile) streams a formatted report: Overview, ABCDE characteristics, What to Ask Your Doctor, Urgency Level.
 - **Acceptance Criteria**:
-  - **Given** an active Gemini API connection and a completed prediction,
+  - **Given** an active Groq API connection and a completed prediction,
   - **When** the summary generator runs,
   - **Then** a structured report appears containing urgent clinical disclaimer and next steps.
-  - **Given** no Gemini API key or network timeout (429/503),
+  - **Given** no Groq API key or network timeout (429/503),
   - **When** generation fails,
   - **Then** the system gracefully falls back to the local static knowledge card without interrupting the user.
 
@@ -124,7 +124,7 @@ Skin cancers (melanoma, basal cell carcinoma) are among the most common malignan
 |---|---|---|
 | **Empty State** | Application initialized with no image uploaded | Display clean upload zone with sample lesion buttons (`Load Sample Melanoma`, `Load Sample Nevus`). |
 | **High Uncertainty / Out-of-Distribution** | Calibrated top-1 confidence < 50% or ambiguous entropy | Display warning banner: *"Ambiguous Lesion Detected — Inconclusive AI Analysis. Immediate in-person dermatologist evaluation strongly advised."* |
-| **Gemini API Outage / 429** | Google Gemini rate limit or network failure | Silently fallback to built-in static medical knowledge cards with zero UI freeze. |
+| **Groq API Outage / 429** | Groq rate limit or network failure | Silently fallback to built-in static medical knowledge cards with zero UI freeze. |
 | **Non-Dermoscopic Phone Photo** | Blurry or low-resolution image uploaded | Display warning notice: *"Non-standard dermoscopy detected. Photographic artifacts may degrade accuracy."* |
 | **Database Connection Failure** | Database host unreachable during scan log save | Log warning to server log, complete UI scan seamlessly (read/inference remains unaffected). |
 

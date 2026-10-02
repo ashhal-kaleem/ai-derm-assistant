@@ -102,6 +102,7 @@ class PredictionResult:
     uncertainty_score: float
     probabilities: List[ClassProbability]
     saliency_heatmap_bytes: Optional[bytes] = None
+    clinical_summary: Optional[str] = None
     gemini_summary: Optional[str] = None
 
 
@@ -116,6 +117,7 @@ class ScanRecord:
     temperature: float = 1.0
     uncertainty_score: float = 0.0
     risk_level: str = "BENIGN"
+    clinical_summary: Optional[str] = None
     gemini_summary: Optional[str] = None
     feedback: Optional[str] = None
     created_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())

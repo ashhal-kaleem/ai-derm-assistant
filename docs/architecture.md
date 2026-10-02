@@ -22,13 +22,13 @@ DermAssist AI separates training, model serving, database persistence, and prese
 ┌────────────────────────────────────────────────────────────────────────┐
 │                        APPLICATION SERVICE LAYER                       │
 │    InferenceService         ReportService           HistoryService     │
-│   (Orchestrates Model)   (Gemini Flash Adapter)  (Scan Persistence)    │
+│   (Orchestrates Model)   (Groq Advisory Adapter)  (Scan Persistence)    │
 └───────────┬───────────────────────┬───────────────────────┬────────────┘
             │                       │                       │
             ▼                       ▼                       ▼
 ┌──────────────────────┐  ┌──────────────────┐  ┌──────────────────────┐
 │  CORE DOMAIN ENGINE  │  │ EXTERNAL ADAPTER │  │ INFRASTRUCTURE LAYER │
-│ • ONNX Inference     │  │ • Gemini 2.0 API │  │ • ScanRepository     │
+│ • ONNX Inference     │  │ • Groq LPU API │  │ • ScanRepository     │
 │ • Temperature Scaling│  │ • Static Cards   │  │ • Supabase Cloud DB  │
 │ • Grad-CAM Heatmaps  │  └──────────────────┘  │ • Supabase Storage   │
 │ • 7-Class Vocabulary │                        └──────────────────────┘
@@ -44,7 +44,7 @@ sequenceDiagram
     participant IS as InferenceService
     participant OE as ONNX Inference Engine
     participant GC as Grad-CAM Engine
-    participant GS as GeminiService
+    participant GS as GroqService
     participant DB as ScanRepository
 
     User->>UI: Uploads Lesion Image (JPG/PNG)
@@ -54,10 +54,10 @@ sequenceDiagram
     IS->>IS: apply_temperature_scaling(logits, T=1.35)
     IS->>GC: generate_saliency(image, top_class)
     GC-->>IS: heatmap_overlay_image
-    alt Gemini Key Present
+    alt Groq Key Present
         IS->>GS: generate_clinical_summary(top_class, confidence)
         GS-->>IS: structured_markdown_report
-    else Gemini Key Missing / Offline
+    else Groq Key Missing / Offline
         IS->>IS: load_static_knowledge_card(top_class)
     end
     IS->>DB: save_scan(ScanRecord)
@@ -75,7 +75,7 @@ sequenceDiagram
    The UI never touches raw tensors, database connections, or HTTP sockets directly.
 2. **Vendor Decoupling Seams**:
    - Model inference is encapsulated in an `InferenceEngine` interface. Model inference is strictly executed via the lightweight `ONNXInferenceEngine` (< 250ms on CPU).
-   - LLM generation is behind `ClinicalAdvisorAdapter`. If the Gemini API fails, it automatically falls back to static verified knowledge cards.
+   - LLM generation is behind `ClinicalAdvisorAdapter`. If the Groq API fails, it automatically falls back to static verified knowledge cards.
 3. **Zero Patient-Level Data Leakage Invariant**:
    All training and validation pipelines enforce grouping by `lesion_id` using `StratifiedGroupKFold`. An automated test gate blocks any release where $\text{TrainLesions} \cap \text{ValLesions} \neq \emptyset$.
 4. **Post-Hoc Probability Calibration**:
@@ -95,7 +95,7 @@ sequenceDiagram
 | **Inference Engine** | `onnxruntime` | `^1.17.0` | Ultra-fast CPU inference (< 250ms), lightweight (~15MB install) |
 | **Model Artifact** | Pretrained EfficientNet-B4 (ONNX) | ONNX v1.17 | Quantized/optimized model weights, zero local training required |
 | **Explainability (XAI)** | OpenCV & NumPy (`opencv-python-headless`) | `^4.8.0` | Saliency overlay & heatmap blending |
-| **Clinical Intelligence**| Google Gemini API (`google-genai`) | `^0.1.1` | Free-tier Gemini 2.0 Flash for structured patient advice |
+| **Clinical Intelligence**| Groq LPU API (`groq`) | `^0.1.1` | Free-tier Groq Llama 3.3 70B for structured patient advice |
 | **Cloud Database** | Supabase (`supabase-py`) | Cloud Serverless | Cloud-hosted PostgreSQL, zero local database storage |
 | **Cloud Media Storage** | Supabase Storage (`scans` bucket) | Cloud Object Store | Remote image & heatmap storage, zero local disk files |
 | **Remote Model Stream** | HuggingFace Hub (`huggingface_hub`) | Cloud Artifact | Dynamic model streaming on boot, zero local weight files |
@@ -160,7 +160,7 @@ src/
 │   └── explainability.py        # Grad-CAM heatmap extraction
 ├── services/                    # Application Orchestration
 │   ├── inference_service.py     # Main facade coordinating preprocessing, ONNX, and CAM
-│   ├── gemini_service.py        # Google Gemini 2.0 Flash client with retry and fallback
+│   ├── groq_service.py        # Groq Llama 3.3 70B client with retry and fallback
 │   └── history_service.py       # Scan repository management
 └── infrastructure/              # External Adapters
     ├── onnx_engine.py           # ONNX Runtime session & fast tensor processing
@@ -174,7 +174,7 @@ src/
 ### 6.1 Environment Variables
 | Variable Name | Required? | Default | Description |
 |---|---|---|---|
-| `GEMINI_API_KEY` | Optional | `None` | Google Gemini API key for dynamic clinical summaries |
+| `GROQ_API_KEY` | Optional | `None` | Groq API key for dynamic clinical summaries |
 | `SUPABASE_URL` | Required | `https://xyz.supabase.co` | Supabase Cloud Project URL |
 | `SUPABASE_KEY` | Required | `eyJ...` | Supabase Anon/Service API Key |
 | `HF_MODEL_REPO` | Optional | `None` | HuggingFace Hub repo ID for streaming ONNX model weights |
@@ -194,5 +194,5 @@ curl -sI http://localhost:8501/_stcore/health
 | Decision ID | Context | Options Considered | Chosen Option & Rationale | Reversal Trigger |
 |---|---|---|---|---|
 | **ADR-01** | Production Model Runtime | A: Heavy DL Framework<br>B: Dedicated ONNX Runtime | **Option B (ONNX Runtime)**: Sub-250ms CPU execution with ultra-small ~15MB install footprint. | If quantization degrades Melanoma Recall by > 1.5%. |
-| **ADR-02** | LLM Advisory Engine | A: Local LLM (Ollama)<br>B: Static Cards Only<br>C: Hybrid (Gemini Flash + Static Fallback) | **Option C (Hybrid)**: Delivers instant doctor-level insights with zero GPU overhead; 100% resilient if offline. | If Gemini pricing introduces unexpected costs. |
+| **ADR-02** | LLM Advisory Engine | A: Local LLM (Ollama)<br>B: Static Cards Only<br>C: Hybrid (Groq Llama 3.3 70B + Static Fallback) | **Option C (Hybrid)**: Delivers instant doctor-level insights with zero GPU overhead; 100% resilient if offline. | If Groq pricing introduces unexpected costs. |
 | **ADR-03** | Data Persistence Engine | A: Traditional File-based Storage<br>B: Supabase (Cloud PostgreSQL + Storage) | **Option B (Supabase)**: 100% Stateless Cloud-First architecture. All scans, images, and heatmaps stored in Supabase Cloud DB and Storage buckets. | If fully offline air-gapped deployment is required. |

@@ -1,17 +1,17 @@
-"""Automated tests for GeminiService and HistoryService."""
+"""Automated tests for GroqService and HistoryService."""
 
 from PIL import Image
 import numpy as np
 import pytest
 
 from src.domain.models import DiagnosisMetadata, PredictionResult, RiskLevel, ScanRecord
-from src.services.gemini_service import GeminiService
+from src.services.groq_service import GroqService
 from src.services.history_service import HistoryService
 
 
-def test_gemini_service_static_fallback():
-    """Verify GeminiService produces structured clinical card when API key is missing."""
-    service = GeminiService(api_key=None)
+def test_groq_service_static_fallback():
+    """Verify GroqService produces structured clinical card when API key is missing."""
+    service = GroqService(api_key=None)
     pred = PredictionResult(
         top_class="mel",
         top_name="Melanoma",

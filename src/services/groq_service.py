@@ -1,4 +1,4 @@
-"""Gemini Clinical Advisory Service with Static Fallback."""
+"""Groq Clinical Advisory Service with Static Fallback."""
 
 import os
 from typing import Optional
@@ -6,29 +6,27 @@ from src.domain.knowledge_cards import get_knowledge_card
 from src.domain.models import PredictionResult
 
 try:
-    from google import genai
-    from google.genai import types
+    from groq import Groq
 except ImportError:
-    genai = None
-    types = None
+    Groq = None
 
 
-class GeminiService:
-    """Provides patient-friendly clinical educational summaries using Gemini 2.0 Flash."""
+class GroqService:
+    """Provides patient-friendly clinical educational summaries using Groq (Llama 3.3 70B)."""
 
     def __init__(self, api_key: Optional[str] = None):
-        self.api_key = api_key or os.getenv("GEMINI_API_KEY")
+        self.api_key = api_key or os.getenv("GROQ_API_KEY")
         self.client = None
-        if self.api_key and genai is not None:
+        if self.api_key and Groq is not None:
             try:
-                self.client = genai.Client(api_key=self.api_key)
+                self.client = Groq(api_key=self.api_key)
             except Exception:
                 self.client = None
 
     def generate_clinical_summary(self, prediction: PredictionResult) -> str:
         """Generate patient educational narrative, falling back to static card if needed."""
         card = get_knowledge_card(prediction.top_class)
-        
+
         if not self.client:
             return self._build_static_summary(prediction, card)
 
@@ -54,17 +52,18 @@ class GeminiService:
         )
 
         try:
-            response = self.client.models.generate_content(
-                model="gemini-2.0-flash",
-                contents=prompt,
-                config=types.GenerateContentConfig(
-                    system_instruction=system_instruction,
-                    temperature=0.2,
-                    max_output_tokens=500
-                )
+            chat_completion = self.client.chat.completions.create(
+                messages=[
+                    {"role": "system", "content": system_instruction},
+                    {"role": "user", "content": prompt}
+                ],
+                model="llama-3.3-70b-versatile",
+                temperature=0.2,
+                max_tokens=600
             )
-            if response and response.text:
-                return response.text.strip()
+            content = chat_completion.choices[0].message.content
+            if content:
+                return content.strip()
             return self._build_static_summary(prediction, card)
         except Exception:
             return self._build_static_summary(prediction, card)

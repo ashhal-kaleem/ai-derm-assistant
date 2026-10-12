@@ -3,7 +3,7 @@ import io
 import os
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
-from PIL import Image
+from PIL import Image, ImageOps
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
 
@@ -85,7 +85,8 @@ async def predict_lesion(
 
     try:
         contents = await file.read()
-        image = Image.open(io.BytesIO(contents)).convert("RGB")
+        raw_img = Image.open(io.BytesIO(contents))
+        image = ImageOps.exif_transpose(raw_img).convert("RGB")
     except Exception as exc:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

@@ -51,22 +51,24 @@ class GroqService:
             f"3. **Recommended Next Steps**: Clear guidance on clinical consultation timeframe."
         )
 
-        try:
-            chat_completion = self.client.chat.completions.create(
-                messages=[
-                    {"role": "system", "content": system_instruction},
-                    {"role": "user", "content": prompt}
-                ],
-                model="llama-3.3-70b-versatile",
-                temperature=0.2,
-                max_tokens=600
-            )
-            content = chat_completion.choices[0].message.content
-            if content:
-                return content.strip()
-            return self._build_static_summary(prediction, card)
-        except Exception:
-            return self._build_static_summary(prediction, card)
+        fallback_models = ["openai/gpt-oss-120b", "qwen/qwen3.8-27b", "llama-3.3-70b-versatile"]
+        for model_name in fallback_models:
+            try:
+                chat_completion = self.client.chat.completions.create(
+                    messages=[
+                        {"role": "system", "content": system_instruction},
+                        {"role": "user", "content": prompt}
+                    ],
+                    model=model_name,
+                    temperature=0.2,
+                    max_tokens=600
+                )
+                content = chat_completion.choices[0].message.content
+                if content:
+                    return content.strip()
+            except Exception:
+                continue
+        return self._build_static_summary(prediction, card)
 
     def _build_static_summary(self, prediction: PredictionResult, card: dict) -> str:
         """Structured fallback narrative built from static clinical knowledge cards."""

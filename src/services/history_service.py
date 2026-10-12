@@ -118,20 +118,26 @@ class HistoryService:
             "notes": notes
         }
         
-        if not hasattr(self, "_lesion_store"):
-            self._lesion_store = {}
-            
-        if lesion_id not in self._lesion_store:
-            self._lesion_store[lesion_id] = {
-                "lesion_id": lesion_id,
-                "lesion_name": lesion_name,
-                "visits": []
-            }
-        self._lesion_store[lesion_id]["visits"].insert(0, visit_row)
+        if hasattr(self.client, "insert_lesion_visit"):
+            self.client.insert_lesion_visit(visit_row)
+        else:
+            if not hasattr(self, "_lesion_store"):
+                self._lesion_store = {}
+            if lesion_id not in self._lesion_store:
+                self._lesion_store[lesion_id] = {
+                    "lesion_id": lesion_id,
+                    "lesion_name": lesion_name,
+                    "visits": []
+                }
+            self._lesion_store[lesion_id]["visits"].insert(0, visit_row)
         return {"visit_id": visit_id, "lesion_id": lesion_id}
 
     def get_lesion_history(self, lesion_id: str) -> Optional[Dict[str, Any]]:
         """Fetch visit timeline for a named lesion."""
+        if hasattr(self.client, "fetch_lesion_visits"):
+            stored = self.client.fetch_lesion_visits(lesion_id)
+            if stored is not None:
+                return stored
         if not hasattr(self, "_lesion_store"):
             self._lesion_store = {}
         return self._lesion_store.get(lesion_id)

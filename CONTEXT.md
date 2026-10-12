@@ -119,3 +119,4 @@ Every task follows a strict 4-step atomic verification cycle:
 - [x] **5.2 Calibration ECE Target Gate (< 5%)** → verify: `pytest tests/test_calibration.py`
 - [x] **5.3 Real Live Backend Verification Gate** → verified: `scratch/test_live_backend.py` with real lesion image (Exit Code 0)
 - [x] **5.4 Production API Root Manifest Gate** → verified: GET / manifest - [x] **5.4 Production Hardening Gate (SQLite WAL, EXIF, Groq Fallback)** → verified: `data/dermassist.db` - [x] **5.3 Real Live Backend Verification Gate** → verified: `scratch/test_live_backend.py` with real lesion image (Exit Code 0) live Groq LPU (Exit Code 0) 19 passing tests (Exit Code 0)
+- [x] **5.6 Live Production Deployment on Render** → verified: https://ai-derm-assistant-api.onrender.com/health (ONNX, Groq, Supabase operational, Exit Code 0)

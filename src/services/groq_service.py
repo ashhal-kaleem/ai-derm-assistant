@@ -1,7 +1,7 @@
 """Groq Clinical Advisory Service with Static Fallback."""
 
 import os
-from typing import Optional
+from typing import Any, Optional
 from src.domain.knowledge_cards import get_knowledge_card
 from src.domain.models import PredictionResult
 
@@ -14,8 +14,11 @@ except ImportError:
 class GroqService:
     """Provides patient-friendly clinical educational summaries using Groq (Llama 3.3 70B)."""
 
-    def __init__(self, api_key: Optional[str] = None):
-        self.api_key = api_key or os.getenv("GROQ_API_KEY")
+    def __init__(self, api_key: Any = "DEFAULT_KEY"):
+        if api_key == "DEFAULT_KEY":
+            self.api_key = os.getenv("GROQ_API_KEY")
+        else:
+            self.api_key = api_key
         self.client = None
         if self.api_key and Groq is not None:
             try:

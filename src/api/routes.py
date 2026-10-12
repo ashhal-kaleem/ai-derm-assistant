@@ -43,6 +43,25 @@ from src.services.report_service import ReportService
 
 router = APIRouter()
 
+@router.get("/", tags=["Discovery"])
+def api_root():
+    """Canonical API Service Discovery Manifest for headless clients and developers."""
+    return {
+        "service": "DermAssist AI — Clinical Inference Engine",
+        "version": "2.0.0",
+        "status": "operational",
+        "docs_url": "/docs",
+        "endpoints": {
+            "predict": "POST /predict",
+            "report": "POST /report",
+            "history": "POST /history",
+            "lesion_timeline": "GET /history/{lesion_id}",
+            "clinics": "GET /clinics",
+            "health": "GET /health"
+        },
+        "compliance": "Educational & Clinical Triage Assistance (Non-FDA/CE Medical Device)"
+    }
+
 
 @router.get("/health", response_model=HealthResponse, tags=["Monitoring"])
 def health_check():

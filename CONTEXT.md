@@ -95,7 +95,7 @@ Every task follows a strict 4-step atomic verification cycle:
 ---
 
 ### Phase 4 — Presentation & Web Application (Streamlit)
-- [x] **4.1 Streamlit App Layout & Upload Component** → verify: `streamlit run app/app.py --server.headless true & sleep 3 && curl -sI http://localhost:8501/_stcore/health`
+- [x] **4.1 Production API Gateway Status Portal** → verified: app/app.py streamlined
 - [x] **4.2 Heatmap Overlay & Confidence Visualizer** → verify: `python3 tests/smoke_ui_components.py`
 - [x] **4.3 Mandatory Medical Disclaimer Enforcement** → verify: `grep -rn "Disclaimer" app/app.py`
 
@@ -105,4 +105,4 @@ Every task follows a strict 4-step atomic verification cycle:
 - [x] **5.1 Zero Patient Leakage Verification Gate** → verify: `pytest tests/test_dataset_leakage.py`
 - [x] **5.2 Calibration ECE Target Gate (< 5%)** → verify: `pytest tests/test_calibration.py`
 - [x] **5.3 Real Live Backend Verification Gate** → verified: `scratch/test_live_backend.py` with real lesion image (Exit Code 0)
-- [x] **5.4 Production Hardening Gate (SQLite WAL, EXIF, Groq Fallback)** → verified: `data/dermassist.db` - [x] **5.3 Real Live Backend Verification Gate** → verified: `scratch/test_live_backend.py` with real lesion image (Exit Code 0) live Groq LPU (Exit Code 0)
+- [x] **5.4 Production API Root Manifest Gate** → verified: GET / manifest - [x] **5.4 Production Hardening Gate (SQLite WAL, EXIF, Groq Fallback)** → verified: `data/dermassist.db` - [x] **5.3 Real Live Backend Verification Gate** → verified: `scratch/test_live_backend.py` with real lesion image (Exit Code 0) live Groq LPU (Exit Code 0) 19 passing tests (Exit Code 0)

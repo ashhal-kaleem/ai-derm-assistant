@@ -94,7 +94,7 @@ export default function ScanScreen({ onAnalysisComplete, addToast }) {
       <ImageScanLoader active={isAnalyzing} imagePreview={previewUrl} />
 
       {/* 8. Hero with Soft Aurora Background */}
-      <SoftAurora className="pt-12 pb-12 px-4 text-center">
+      <SoftAurora className="pt-28 pb-14 px-4 text-center">
         <div className="max-w-4xl mx-auto flex flex-col items-center">
           {/* Badge */}
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-100/80 border border-emerald-500/20 text-emerald-800 text-xs font-semibold mb-4 shadow-xs">

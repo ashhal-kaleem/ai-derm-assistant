@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Brain, Cpu, Sparkles, CheckCircle2, Loader2, ShieldCheck } from "lucide-react";
+import { Brain, Cpu, Layers, CheckCircle2, Loader2, ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const SCAN_STAGES = [
   { id: 1, text: "Normalizing RGB Tensor Matrix (380x380)", icon: Cpu },
   { id: 2, text: "Running EfficientNet-B4 Convolutional Inference", icon: Brain },
   { id: 3, text: "Calibrating Temperature Logits (ECE < 5%)", icon: ShieldCheck },
-  { id: 4, text: "Extracting Grad-CAM Feature Saliency Map", icon: Sparkles },
-  { id: 5, text: "Synthesizing Groq LPU Clinical Summary", icon: CheckCircle2 },
+  { id: 4, text: "Extracting Grad-CAM Feature Saliency Map", icon: Layers },
+  { id: 5, text: "Generating Clinical Triage Narrative", icon: CheckCircle2 },
 ];
 
 export const ImageScanLoader = ({ active = false, imagePreview = null }) => {

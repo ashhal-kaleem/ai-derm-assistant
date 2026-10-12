@@ -1,5 +1,5 @@
 import React from "react";
-import { ShieldCheck, HeartPulse, Sparkles, Lock, Database, Info } from "lucide-react";
+import { ShieldCheck, HeartPulse, CheckCircle2, Lock, Database, Info } from "lucide-react";
 
 export const Footer = () => {
   return (
@@ -32,7 +32,7 @@ export const Footer = () => {
                 Client-Side Sovereignty
               </span>
               <span className="inline-flex items-center gap-1.5 text-[11px] font-mono text-amber-700 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-200">
-                <Sparkles className="w-3 h-3 text-amber-500" />
+                <CheckCircle2 className="w-3 h-3 text-emerald-600" />
                 Calibrated ECE Optimized
               </span>
             </div>

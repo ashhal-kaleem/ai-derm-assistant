@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Camera, Cloud, Sparkles, AlertTriangle, ShieldCheck, HelpCircle } from "lucide-react";
+import { Camera, Cloud, Sun, Activity, AlertTriangle, ShieldCheck, HelpCircle } from "lucide-react";
 import { SoftAurora } from "@/components/ui/soft-aurora";
 import { BlurText } from "@/components/ui/blur-text";
 import { Stepper } from "@/components/ui/stepper";
@@ -94,12 +94,12 @@ export default function ScanScreen({ onAnalysisComplete, addToast }) {
       <ImageScanLoader active={isAnalyzing} imagePreview={previewUrl} />
 
       {/* 8. Hero with Soft Aurora Background */}
-      <SoftAurora className="pt-28 pb-14 px-4 text-center">
+      <SoftAurora className="pt-12 pb-12 px-4 text-center">
         <div className="max-w-4xl mx-auto flex flex-col items-center">
           {/* Badge */}
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-100/80 border border-emerald-500/20 text-emerald-800 text-xs font-semibold mb-4 shadow-xs">
-            <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
-            <span>AI Dermatology Diagnostic Support • HAM10000 Benchmark</span>
+            <Activity className="w-3.5 h-3.5 text-emerald-600" />
+            <span>HAM10000 Validated • 7-Class Clinical Triage</span>
           </div>
 
           {/* 10. Hero Heading with Blur Text */}
@@ -146,7 +146,7 @@ export default function ScanScreen({ onAnalysisComplete, addToast }) {
             <div className="flex items-center gap-3">
               <label className="flex items-center gap-2 text-xs font-medium text-slate-700 cursor-pointer select-none">
                 <Cloud className="w-4 h-4 text-emerald-600" />
-                <span>Cloud mein save karo</span>
+                <span>Save scan to cloud archive</span>
                 <input
                   type="checkbox"
                   checked={saveToCloud}
@@ -187,7 +187,7 @@ export default function ScanScreen({ onAnalysisComplete, addToast }) {
 
           <SpotlightCard>
             <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center mb-3">
-              <Sparkles className="w-5 h-5" />
+              <Sun className="w-5 h-5" />
             </div>
             <h4 className="font-heading font-bold text-sm text-slate-900 mb-1">
               Uniform Diffuse Light

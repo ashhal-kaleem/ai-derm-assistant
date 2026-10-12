@@ -117,7 +117,7 @@ export const ClinicFinderScreen = ({ onStartScan, addToast }) => {
   };
 
   return (
-    <div className="pt-24 pb-20 px-4 max-w-5xl mx-auto space-y-8">
+    <div className="pt-10 pb-20 px-4 max-w-5xl mx-auto space-y-8">
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-200 pb-5">
         <div>
@@ -141,7 +141,7 @@ export const ClinicFinderScreen = ({ onStartScan, addToast }) => {
             ) : (
               <Navigation className="w-3.5 h-3.5" />
             )}
-            <span>Meri Location Use Karo</span>
+            <span>Use Current Location</span>
           </button>
 
           {/* Radius Selector */}
@@ -233,16 +233,10 @@ export const ClinicFinderScreen = ({ onStartScan, addToast }) => {
                     rel="noreferrer"
                     className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 hover:text-emerald-900 transition-colors"
                   >
-                    <span>Directions in Maps</span>
+                    <span>View on Google Maps</span>
                     <ExternalLink className="w-3.5 h-3.5" />
                   </a>
 
-                  <button
-                    onClick={onStartScan}
-                    className="text-[11px] text-slate-400 hover:text-slate-700 font-mono"
-                  >
-                    Attach Scan
-                  </button>
                 </div>
               </div>
             );

@@ -30,7 +30,7 @@ export const FloatingNav = ({ navItems, className, currentScreen, setScreen, ser
         animate={{ y: visible ? 0 : -100, opacity: visible ? 1 : 0 }}
         transition={{ duration: 0.2 }}
         className={cn(
-          "flex max-w-fit fixed top-10 inset-x-0 mx-auto z-[5000] items-center justify-center",
+          "flex max-w-fit fixed top-5 inset-x-0 mx-auto z-[5000] items-center justify-center",
           className
         )}
       >
@@ -64,31 +64,12 @@ export const FloatingNav = ({ navItems, className, currentScreen, setScreen, ser
                     active
                       ? "bg-emerald-600 text-white font-semibold shadow-xs"
                       : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-                  )}
-                >
+                  )}> 
                   <span className="text-xs">{navItem.icon}</span>
                   <span className="hidden sm:inline">{navItem.name}</span>
                 </button>
               );
             })}
-          </div>
-
-          {/* Server status pill */}
-          <div className="h-4 w-px bg-slate-200" />
-          <div className="flex items-center gap-1.5 pl-1 pr-2 text-[11px] font-mono font-medium text-emerald-800">
-            <span
-              className={cn(
-                "w-2 h-2 rounded-full",
-                serverOnline === true
-                  ? "bg-emerald-500 animate-pulse"
-                  : serverOnline === false
-                  ? "bg-red-500"
-                  : "bg-amber-400"
-              )}
-            />
-            <span className="hidden md:inline">
-              {serverOnline === true ? "API Live" : serverOnline === false ? "Offline" : "Checking"}
-            </span>
           </div>
         </div>
       </motion.div>

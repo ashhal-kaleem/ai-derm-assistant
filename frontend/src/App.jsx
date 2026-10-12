@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Sparkles, MapPin, ShieldAlert } from "lucide-react";
+import { Sparkles, MapPin } from "lucide-react";
 import { FloatingNav } from "@/components/ui/floating-navbar";
 import { ToastStack } from "@/components/ui/animated-toast-stack";
 import ScanScreen from "@/components/ScanScreen";
@@ -46,16 +46,6 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-[#ECFDF5] text-[#0F172A] flex flex-col font-sans selection:bg-emerald-200">
-      {/* Permanent Medical Disclaimer Banner */}
-      <div className="w-full bg-amber-500/10 border-b border-amber-500/20 px-4 py-2.5 text-xs text-amber-900 sticky top-0 z-[6000] backdrop-blur-md">
-        <div className="max-w-5xl mx-auto flex items-center justify-center gap-2 text-center font-medium">
-          <ShieldAlert className="w-4 h-4 text-amber-600 shrink-0" />
-          <span>
-            <strong>PERMANENT MEDICAL DISCLAIMER:</strong> DermAssist AI is an educational clinical triage assistance tool. It does not provide medical diagnosis. Any suspicious skin lesion requires physical evaluation by a certified dermatologist.
-          </span>
-        </div>
-      </div>
-
       {/* Floating Navbar (Aceternity) */}
       <FloatingNav
         navItems={navItems}

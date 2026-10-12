@@ -8,6 +8,7 @@ from PIL import Image, ImageOps
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
 
 from src.api.dependencies import (
+    get_geolocation_service,
     get_groq_service,
     get_history_service,
     get_inference_service,
@@ -36,6 +37,7 @@ from src.domain.models import (
     map_risk_tier,
     CLASS_NAMES,
 )
+from src.services.geolocation_service import GeolocationService
 from src.services.groq_service import GroqService
 from src.services.history_service import HistoryService
 from src.services.inference_service import InferenceService
@@ -267,37 +269,13 @@ def find_nearby_clinics(
     lat: float = Query(..., description="User latitude"),
     lon: float = Query(..., description="User longitude"),
     radius_km: float = Query(5.0, description="Search radius in kilometers"),
+    geo_service: GeolocationService = Depends(get_geolocation_service),
 ):
     """
-    Fetch nearby dermatologists and skin clinics for red and yellow risk results.
+    Fetch verified nearby dermatologists and medical centers via OpenStreetMap Overpass with fallback.
     """
-    clinics = [
-        ClinicItem(
-            name="Regional Dermatology & Skin Care Clinic",
-            lat=lat + 0.012,
-            lon=lon + 0.008,
-            distance_km=1.4,
-            address="Specialized Cutaneous Care Wing",
-            directions_url=f"https://www.google.com/maps/dir/?api=1&destination={lat+0.012},{lon+0.008}",
-        ),
-        ClinicItem(
-            name="University Teaching Hospital — Dermatology OPD",
-            lat=lat - 0.021,
-            lon=lon + 0.015,
-            distance_km=2.8,
-            address="Tertiary Healthcare Complex, OPD Block B",
-            directions_url=f"https://www.google.com/maps/dir/?api=1&destination={lat-0.021},{lon+0.015}",
-        ),
-        ClinicItem(
-            name="Advanced Cutaneous Oncology Center",
-            lat=lat + 0.035,
-            lon=lon - 0.018,
-            distance_km=4.2,
-            address="Medical District, Oncology Annex",
-            directions_url=f"https://www.google.com/maps/dir/?api=1&destination={lat+0.035},{lon-0.018}",
-        ),
-    ]
-    return ClinicSearchResponse(clinics=clinics)
+    raw_clinics = geo_service.search_clinics(lat=lat, lon=lon, radius_km=radius_km)
+    return ClinicSearchResponse(clinics=[ClinicItem(**c) for c in raw_clinics])
 
 
 @router.post("/api/v1/clinical-summary", response_model=ClinicalSummaryResponse, tags=["Advisory"])

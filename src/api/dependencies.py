@@ -38,3 +38,10 @@ from src.services.report_service import ReportService
 @lru_cache()
 def get_report_service() -> ReportService:
     return ReportService()
+
+from src.services.geolocation_service import GeolocationService
+
+
+@lru_cache()
+def get_geolocation_service() -> GeolocationService:
+    return GeolocationService()

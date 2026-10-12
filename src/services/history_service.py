@@ -88,3 +88,50 @@ class HistoryService:
                 )
             )
         return records
+
+    def create_lesion_visit(
+        self,
+        lesion_name: str,
+        prediction: Dict[str, Any],
+        image_b64: Optional[str] = None,
+        notes: Optional[str] = None
+    ) -> Dict[str, str]:
+        """Record a new longitudinal visit for a named lesion."""
+        import uuid
+        from datetime import datetime, timezone
+        
+        visit_id = str(uuid.uuid4())
+        lesion_id = f"lesion_{abs(hash(lesion_name.lower().strip())) % 1000000}"
+        
+        visit_row = {
+            "visit_id": visit_id,
+            "lesion_id": lesion_id,
+            "lesion_name": lesion_name,
+            "date": datetime.now(timezone.utc).isoformat(),
+            "predicted_class": prediction.get("predicted_class") or prediction.get("top_class", ""),
+            "class_name": prediction.get("class_name") or prediction.get("top_name", ""),
+            "confidence": float(prediction.get("confidence") or prediction.get("calibrated_confidence", 0.0)),
+            "risk_level": prediction.get("risk_level", "green"),
+            "risk_label": prediction.get("risk_label", "Benign"),
+            "image_thumb": image_b64[:120] if image_b64 else None,
+            "llm_explanation": prediction.get("llm_explanation") or prediction.get("clinical_summary"),
+            "notes": notes
+        }
+        
+        if not hasattr(self, "_lesion_store"):
+            self._lesion_store = {}
+            
+        if lesion_id not in self._lesion_store:
+            self._lesion_store[lesion_id] = {
+                "lesion_id": lesion_id,
+                "lesion_name": lesion_name,
+                "visits": []
+            }
+        self._lesion_store[lesion_id]["visits"].insert(0, visit_row)
+        return {"visit_id": visit_id, "lesion_id": lesion_id}
+
+    def get_lesion_history(self, lesion_id: str) -> Optional[Dict[str, Any]]:
+        """Fetch visit timeline for a named lesion."""
+        if not hasattr(self, "_lesion_store"):
+            self._lesion_store = {}
+        return self._lesion_store.get(lesion_id)

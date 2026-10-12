@@ -121,3 +121,45 @@ class ScanRecord:
     gemini_summary: Optional[str] = None
     feedback: Optional[str] = None
     created_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+def map_risk_tier(class_code: str) -> tuple[str, str]:
+    """Map 7 HAM10000 classes to PRD v2.0 color badge and human label."""
+    code = class_code.lower().strip()
+    if code in ("mel", "bcc"):
+        return ("red", "See doctor urgently")
+    elif code in ("akiec", "vasc"):
+        return ("yellow", "Monitor")
+    else:
+        return ("green", "Benign")
+
+
+def categorize_uncertainty(uncertainty_score: float) -> str:
+    """Categorize normalized entropy/uncertainty score into low/medium/high."""
+    if uncertainty_score < 0.25:
+        return "low"
+    elif uncertainty_score < 0.50:
+        return "medium"
+    return "high"
+
+
+@dataclass
+class LesionVisit:
+    visit_id: str = field(default_factory=lambda: str(uuid.uuid4()))
+    lesion_id: str = ""
+    date: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    predicted_class: str = ""
+    class_name: str = ""
+    confidence: float = 0.0
+    risk_level: str = "green"
+    risk_label: str = "Benign"
+    image_thumb: Optional[str] = None
+    llm_explanation: Optional[str] = None
+    notes: Optional[str] = None
+
+
+@dataclass
+class LesionEntity:
+    id: str = field(default_factory=lambda: str(uuid.uuid4()))
+    name: str = ""
+    created_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    visits: List[LesionVisit] = field(default_factory=list)

@@ -31,3 +31,10 @@ def get_history_service() -> HistoryService:
     settings = get_settings()
     repo = SupabaseCloudClient(url=settings.SUPABASE_URL, key=settings.SUPABASE_KEY)
     return HistoryService(client=repo)
+
+from src.services.report_service import ReportService
+
+
+@lru_cache()
+def get_report_service() -> ReportService:
+    return ReportService()

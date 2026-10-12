@@ -104,11 +104,13 @@ Every task follows a strict 4-step atomic verification cycle:
 
 ---
 
-### Phase 4 — Presentation ### Phase 4 — Presentation & Web Application (Streamlit) Web Application (Vercel Frontend + Render Backend)
-- [x] **4.1 Production Google Stitch UI Integration** → verified: frontend/index.html (HTML5/JS + live REST API bindings)
-- [x] **4.2 Heatmap Overlay - [x] **4.2 Heatmap Overlay & Confidence Visualizer** → verify: `python3 tests/smoke_ui_components.py` Confidence Visualizer** → verified: Real-time Grad-CAM base64 injection into AI Heatmap Viewport
-- [x] **4.3 Mandatory Medical Disclaimer Enforcement** → verified: Permanent clinical disclaimer banner in frontend/index.html
-
+### Phase 4 — Presentation & Web Application (Vercel Frontend + Render Backend)
+- [x] **4.1 Production Multi-Screen Vite React UI** → verified: `cd frontend && npm run build` (Exit Code 0)
+- [x] **4.2 Screen 1: Scan & Upload Engine** → verified: Aceternity FileUpload, ImageScanLoader laser, BlurText, SoftAurora, Stepper
+- [x] **4.3 Screen 2: Diagnosis, Compare & PDF Export** → verified: Aceternity Compare Grad-CAM slider, 3-tier Risk Badge, Probability distribution, PDF generation
+- [x] **4.4 Screen 3: Longitudinal Lesion History** → verified: Aceternity Timeline, risk escalation flags, scan timeline
+- [x] **4.5 Screen 4: Geolocation Clinic Finder** → verified: 3D Pin, GPS acquisition, radius filter, Google Maps navigation
+- [x] **4.6 Permanent Medical Disclaimer & Governance Footer** → verified: Regulatory notice, data sovereignty commitment
 ---
 
 ### Phase 5 — Quality Review, Testing & Release

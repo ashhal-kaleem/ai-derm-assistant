@@ -1,0 +1,392 @@
+import React, { useState } from "react";
+import {
+  FileDown,
+  BookmarkPlus,
+  MapPin,
+  RefreshCw,
+
+
+  BrainCircuit,
+
+  Loader2,
+  CheckCircle2,
+  AlertTriangle
+} from "lucide-react";
+import { Compare } from "@/components/ui/compare";
+import { AnimatedBadge } from "@/components/ui/animated-badge";
+import { Progress } from "@/components/ui/progress";
+import { CountUp } from "@/components/ui/count-up";
+import { TextGenerateEffect } from "@/components/ui/text-generate-effect";
+import { ProbabilityBarChart } from "@/components/ui/probability-bar-chart";
+import { MorphingModal } from "@/components/ui/morphing-modal";
+import { SpotlightCard } from "@/components/ui/spotlight-card";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { API_BASE_URL, STATIC_KNOWLEDGE_CARDS } from "@/config";
+
+export default function ResultScreen({
+  prediction,
+  originalImage,
+  onReset,
+  onFindDoctors,
+  addToast
+}) {
+  const [isTrackModalOpen, setIsTrackModalOpen] = useState(false);
+  const [patientId, setPatientId] = useState("PT-" + Math.floor(1000 + Math.random() * 9000));
+  const [anatomicalSite, setAnatomicalSite] = useState("");
+  const [clinicalNotes, setClinicalNotes] = useState("");
+  const [isSavingHistory, setIsSavingHistory] = useState(false);
+  const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
+
+  if (!prediction) {
+    return (
+      <div className="pt-28 pb-16 px-4 text-center">
+        <p className="text-slate-500 mb-4">No active analysis result found.</p>
+        <button
+          onClick={onReset}
+          className="px-5 py-2.5 rounded-full bg-emerald-600 text-white font-medium text-xs"
+        >
+          Return to Scanner
+        </button>
+      </div>
+    );
+  }
+
+  const confidencePercent = (prediction.confidence * 100);
+  const uncertaintyLabel =
+    confidencePercent >= 85 ? "Low Uncertainty" : confidencePercent >= 65 ? "Moderate Uncertainty" : "High Uncertainty";
+  const uncertaintyColor =
+    confidencePercent >= 85
+      ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+      : confidencePercent >= 65
+      ? "bg-amber-50 text-amber-700 border-amber-200"
+      : "bg-red-50 text-red-700 border-red-200";
+
+  const aiExplanation =
+    prediction.llm_explanation ||
+    STATIC_KNOWLEDGE_CARDS[prediction.class_name] ||
+    "Clinical correlation and physical examination by a certified dermatologist recommended.";
+
+  // Handle PDF report download from POST /report
+  const handleDownloadPdf = async () => {
+    setIsDownloadingPdf(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/report`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          patient_id: patientId,
+          diagnosis: prediction.class_name,
+          confidence: prediction.confidence,
+          risk_level: prediction.risk_level,
+          clinical_notes: aiExplanation
+        })
+      });
+
+      if (!res.ok) throw new Error("PDF report generation failed.");
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `dermassist_report_${prediction.class_name.toLowerCase().replace(/\s+/g, "_")}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+
+      if (addToast) {
+        addToast({
+          type: "success",
+          title: "Report Downloaded",
+          message: "Clinical PDF summary saved successfully."
+        });
+      }
+    } catch (err) {
+      if (addToast) {
+        addToast({
+          type: "error",
+          title: "Download Failed",
+          message: err.message
+        });
+      }
+    } finally {
+      setIsDownloadingPdf(false);
+    }
+  };
+
+  // Handle lesion tracking POST /history
+  const handleSaveToHistory = async (e) => {
+    e.preventDefault();
+    setIsSavingHistory(true);
+    try {
+      const payload = {
+        patient_id: patientId,
+        lesion_id: prediction.lesion_id || `lesion_${Date.now()}`,
+        class_name: prediction.class_name,
+        confidence: prediction.confidence,
+        risk_level: prediction.risk_level,
+        notes: clinicalNotes || `Registered ${prediction.class_name} at ${anatomicalSite || "unspecified site"}.`,
+        image_url: prediction.image_url || ""
+      };
+
+      const res = await fetch(`${API_BASE_URL}/history`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      if (!res.ok) throw new Error("Failed to register lesion in history.");
+
+      setIsTrackModalOpen(false);
+      if (addToast) {
+        addToast({
+          type: "success",
+          title: "Lesion Registered",
+          message: "Saved to longitudinal lesion history."
+        });
+      }
+    } catch (err) {
+      if (addToast) {
+        addToast({
+          type: "error",
+          title: "Error Saving",
+          message: err.message
+        });
+      }
+    } finally {
+      setIsSavingHistory(false);
+    }
+  };
+
+  return (
+    <div className="pt-24 pb-20 px-4 max-w-5xl mx-auto space-y-8">
+      {/* Top Controls Header */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-200 pb-5">
+        <div>
+          <span className="text-[11px] font-mono font-semibold uppercase tracking-wider text-emerald-700 bg-emerald-100/60 px-2.5 py-0.5 rounded-full">
+            Inference Complete
+          </span>
+          <h2 className="text-2xl sm:text-3xl font-extrabold text-[#064E3B] font-heading mt-1">
+            Diagnostic & Triage Report
+          </h2>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button
+            onClick={onReset}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-full border border-slate-200 bg-white text-slate-700 text-xs font-semibold hover:bg-slate-50 transition-colors shadow-xs"
+          >
+            <RefreshCw className="w-3.5 h-3.5" /> Scan Another
+          </button>
+          <button
+            onClick={onFindDoctors}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700 shadow-sm transition-colors"
+          >
+            <MapPin className="w-3.5 h-3.5" /> Find Clinics
+          </button>
+        </div>
+      </div>
+
+      {/* Main Grid: Visualizer & Result Metrics */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        {/* Left Column: Compare Slider (6 cols) */}
+        <div className="lg:col-span-6 flex flex-col gap-3">
+          <div className="flex items-center justify-between text-xs font-mono text-slate-500 px-1">
+            <span className="font-semibold text-slate-800">Visual Evidence Overlay</span>
+            <span>Drag handle to compare</span>
+          </div>
+
+          <Compare
+            firstImage={originalImage}
+            secondImage={prediction.heatmap_b64 || originalImage}
+            className="w-full"
+          />
+
+          <div className="flex items-center justify-between text-[11px] font-mono text-slate-400 px-2">
+            <span>Left: Original Dermoscopic</span>
+            <span>Right: Grad-CAM Saliency</span>
+          </div>
+        </div>
+
+        {/* Right Column: Diagnostic Cards & Badges (6 cols) */}
+        <div className="lg:col-span-6 flex flex-col gap-5">
+          {/* Diagnostic Result Card (Spotlight Card) */}
+          <SpotlightCard className="p-6">
+            <div className="flex items-start justify-between gap-3 mb-4">
+              <div>
+                <p className="text-xs font-mono font-medium text-slate-400 uppercase tracking-wider">
+                  Primary Classification
+                </p>
+                <h3 className="text-2xl sm:text-3xl font-bold font-heading text-slate-900 mt-0.5">
+                  {prediction.class_name}
+                </h3>
+              </div>
+
+              {/* 8. Animated Risk Badge */}
+              <AnimatedBadge level={prediction.risk_level} label={prediction.risk_label} />
+            </div>
+
+            {/* Confidence Progress & CountUp */}
+            <div className="space-y-2 mb-5">
+              <div className="flex items-center justify-between text-xs font-medium">
+                <span className="text-slate-600">Calibrated Confidence ($T^*$):</span>
+                <span className="font-mono text-base font-bold text-slate-900">
+                  <CountUp value={confidencePercent} />
+                </span>
+              </div>
+              <Progress
+                value={confidencePercent}
+                barClassName={
+                  prediction.risk_level === "red"
+                    ? "bg-red-500"
+                    : prediction.risk_level === "yellow"
+                    ? "bg-amber-500"
+                    : "bg-emerald-600"
+                }
+              />
+            </div>
+
+            {/* Chips: Uncertainty & Model info */}
+            <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-100">
+              <span className={`text-[11px] font-mono px-2.5 py-1 rounded-full border font-semibold ${uncertaintyColor}`}>
+                {uncertaintyLabel}
+              </span>
+              <span className="text-[11px] font-mono px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
+                ONNX CPU • Sub-250ms
+              </span>
+            </div>
+          </SpotlightCard>
+
+          {/* AI Clinical Advisory Narrative Card */}
+          <div className="bg-white rounded-3xl p-6 border border-emerald-500/20 shadow-sm space-y-3">
+            <div className="flex items-center gap-2 text-xs font-bold font-heading text-emerald-800">
+              <BrainCircuit className="w-4 h-4 text-emerald-600" />
+              <span>Clinical Advisory Assessment</span>
+            </div>
+
+            {/* 12. Text Generate Effect for AI Explanation */}
+            <div className="text-xs sm:text-sm text-slate-700 leading-relaxed font-sans bg-emerald-50/40 p-4 rounded-2xl border border-emerald-500/10">
+              <TextGenerateEffect words={aiExplanation} />
+            </div>
+          </div>
+
+          {/* Action Buttons: PDF Download & Track Lesion */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+            <button
+              onClick={handleDownloadPdf}
+              disabled={isDownloadingPdf}
+              className="flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-[#064E3B] hover:bg-[#059669] text-white text-xs font-semibold shadow-md transition-colors disabled:opacity-50"
+            >
+              {isDownloadingPdf ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" /> Preparing PDF...
+                </>
+              ) : (
+                <>
+                  <FileDown className="w-4 h-4" /> Download Clinical PDF
+                </>
+              )}
+            </button>
+
+            <button
+              onClick={() => setIsTrackModalOpen(true)}
+              className="flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-white hover:bg-slate-50 border border-slate-300 text-slate-800 text-xs font-semibold shadow-xs transition-colors"
+            >
+              <BookmarkPlus className="w-4 h-4 text-emerald-700" /> Track This Lesion
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* 11. 7-Class Probability Bar Chart Section */}
+      <div className="pt-4">
+        <ProbabilityBarChart probabilities={prediction.probabilities || {}} />
+      </div>
+
+      {/* 14. Medical Disclaimer Warning */}
+      <Alert variant="warning">
+        <AlertTriangle className="w-4 h-4" />
+        <AlertTitle>Mandatory Medical Protocol</AlertTitle>
+        <AlertDescription>
+          This automated classification is generated for clinical education and triage support. Never delay formal dermatological consultation based on automated screening results.
+        </AlertDescription>
+      </Alert>
+
+      {/* 21. Morphing Modal: Track Lesion Form */}
+      <MorphingModal
+        isOpen={isTrackModalOpen}
+        onClose={() => setIsTrackModalOpen(false)}
+        title="Register Lesion in Longitudinal History"
+      >
+        <form onSubmit={handleSaveToHistory} className="space-y-4">
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 mb-1">
+              Patient Identifier
+            </label>
+            <input
+              type="text"
+              value={patientId}
+              onChange={(e) => setPatientId(e.target.value)}
+              required
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 mb-1">
+              Anatomical Site / Location
+            </label>
+            <input
+              type="text"
+              placeholder="e.g. Left upper arm, Upper back"
+              value={anatomicalSite}
+              onChange={(e) => setAnatomicalSite(e.target.value)}
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 mb-1">
+              Clinical Notes & Progression
+            </label>
+            <textarea
+              rows={3}
+              placeholder="Record any noticed change in size, shape, borders, or color..."
+              value={clinicalNotes}
+              onChange={(e) => setClinicalNotes(e.target.value)}
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+            />
+          </div>
+
+          <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs flex justify-between items-center font-mono">
+            <span>Diagnosed: <strong>{prediction.class_name}</strong></span>
+            <span>Confidence: <strong>{confidencePercent.toFixed(1)}%</strong></span>
+          </div>
+
+          <div className="flex justify-end gap-3 pt-2">
+            <button
+              type="button"
+              onClick={() => setIsTrackModalOpen(false)}
+              className="px-4 py-2 text-xs font-medium text-slate-600 hover:text-slate-900"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={isSavingHistory}
+              className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold flex items-center gap-2 shadow-md transition-all"
+            >
+              {isSavingHistory ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" /> Saving...
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 className="w-4 h-4" /> Save to Timeline
+                </>
+              )}
+            </button>
+          </div>
+        </form>
+      </MorphingModal>
+    </div>
+  );
+}

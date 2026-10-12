@@ -1,0 +1,55 @@
+@import "tailwindcss";
+@theme {
+  --color-primary: #059669;
+  --color-primary-dark: #064E3B;
+  --color-page-bg: #ECFDF5;
+  --color-ink: #0F172A;
+  --color-slate-muted: #64748B;
+  --color-risk-benign: #16A34A;
+  --color-risk-monitor: #F59E0B;
+  --color-risk-urgent: #DC2626;
+  --font-heading: "Plus Jakarta Sans", sans-serif;
+  --font-sans: "Inter", sans-serif;
+  --font-mono: "Geist Mono", monospace;
+}
+
+:root {
+  --font-heading: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'Geist Mono', monospace;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: #ECFDF5;
+  color: #0F172A;
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+}
+
+.font-mono {
+  font-family: var(--font-mono);
+}
+
+@keyframes pulseGlow {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50% { opacity: 0.9; transform: scale(1.03); }
+}
+
+.aurora-bg {
+  background: radial-gradient(circle at 20% 20%, rgba(5, 150, 105, 0.15) 0%, transparent 40%),
+              radial-gradient(circle at 80% 80%, rgba(6, 78, 59, 0.12) 0%, transparent 50%),
+              radial-gradient(circle at 50% 50%, rgba(16, 185, 129, 0.08) 0%, transparent 60%),
+              #ECFDF5;
+}
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(5, 150, 105, 0.15);
+}

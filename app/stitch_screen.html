@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<meta content="web_standard" name="shell-type"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Geist+Mono,+monospace:wght@100..900&family=Geist,+sans-serif:wght@100..900&display=swap" rel="stylesheet"/>
+<style>
+@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}
+::-webkit-scrollbar{display:none;}
+</style>
+<script src="https://cdn.tailwindcss.com"></script>
+<script id="tailwind-config">
+tailwind.config={
+  "darkMode":"class",
+  "theme":{
+    "extend":{
+      "colors":{
+        "on-error-container":"#93000a",
+        "surface-container-highest":"#e6e0e9",
+        "primary-container":"#6750a4",
+        "on-secondary-container":"#645a7d",
+        "outline-variant":"#cbc4d2",
+        "on-primary-container":"#e0d2ff",
+        "surface":"#fdf7ff",
+        "inverse-primary":"#cfbcff",
+        "surface-bright":"#fdf7ff",
+        "secondary-fixed":"#e9ddff",
+        "on-primary-fixed-variant":"#4f378a",
+        "on-tertiary-fixed":"#241a00",
+        "error-container":"#ffdad6",
+        "on-primary":"#ffffff",
+        "on-tertiary-fixed-variant":"#594400",
+        "primary-fixed-dim":"#cfbcff",
+        "secondary":"#63597c",
+        "surface-container-high":"#ece6ee",
+        "on-primary-fixed":"#22005d",
+        "on-surface":"#1d1b20",
+        "tertiary":"#765b00",
+        "primary-fixed":"#e9ddff",
+        "surface-container-low":"#f8f2fa",
+        "on-tertiary-container":"#503d00",
+        "on-secondary":"#ffffff",
+        "on-error":"#ffffff",
+        "on-surface-variant":"#494551",
+        "tertiary-fixed":"#ffdf93",
+        "surface-tint":"#6750a4",
+        "tertiary-container":"#c9a74d",
+        "outline":"#7a7582",
+        "surface-container-lowest":"#ffffff",
+        "on-secondary-fixed-variant":"#4b4263",
+        "surface-container":"#f2ecf4",
+        "secondary-container":"#e1d4fd",
+        "error":"#ba1a1a",
+        "secondary-fixed-dim":"#cdc0e9",
+        "surface-dim":"#ded8e0",
+        "on-tertiary":"#ffffff",
+        "on-background":"#1d1b20",
+        "surface-variant":"#e6e0e9",
+        "background":"#fdf7ff",
+        "on-secondary-fixed":"#1f1635",
+        "inverse-on-surface":"#f5eff7",
+        "tertiary-fixed-dim":"#e7c365",
+        "inverse-surface":"#322f35",
+        "primary":"#4f378a"
+      },
+      "borderRadius":{"DEFAULT":"1rem","lg":"2rem","xl":"3rem","full":"9999px"},
+      "spacing":{"space-sm":"1rem","space-md":"1.5rem","margin":"4rem","gutter":"2rem","space-xl":"4rem","space-xs":"0.5rem","space-lg":"2.5rem"},
+      "fontFamily":{
+        "headline-sm":["\"Geist, sans-serif\""],
+        "body-sm":["\"Geist, sans-serif\""],
+        "body-lg":["\"Geist, sans-serif\""],
+        "label-sm":["\"Geist Mono, monospace\""],
+        "headline-lg":["\"Geist, sans-serif\""],
+        "label-md":["\"Geist Mono, monospace\""],
+        "display":["\"Geist, sans-serif\""],
+        "headline-md":["\"Geist, sans-serif\""],
+        "body-md":["\"Geist, sans-serif\""]
+      },
+      "fontSize":{
+        "headline-sm":["1.5rem",{"lineHeight":"1.3","fontWeight":"600"}],
+        "body-sm":["0.875rem",{"lineHeight":"1.5","fontWeight":"400"}],
+        "body-lg":["1.125rem",{"lineHeight":"1.65","fontWeight":"400"}],
+        "label-sm":["0.75rem",{"lineHeight":"1.4","letterSpacing":"0.05em","fontWeight":"500"}],
+        "headline-lg":["2.5rem",{"lineHeight":"1.2","letterSpacing":"-0.02em","fontWeight":"700"}],
+        "label-md":["0.8125rem",{"lineHeight":"1.4","letterSpacing":"0.05em","fontWeight":"500"}],
+        "display":["clamp(2.25rem, 5vw, 3.75rem)",{"lineHeight":"1.1","letterSpacing":"-0.025em","fontWeight":"800"}],
+        "headline-md":["2rem",{"lineHeight":"1.25","letterSpacing":"-0.015em","fontWeight":"700"}],
+        "body-md":["1rem",{"lineHeight":"1.65","fontWeight":"400"}]
+      }
+    }
+  }
+}
+</script>
+</head>
+<body class="bg-surface font-body-md text-body-md text-on-surface antialiased">
+<header class="fixed top-0 w-full z-50 bg-surface/80 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)]">
+<div class="h-16 max-w-7xl mx-auto px-6 lg:px-12 flex items-center justify-between">
+<a class="flex items-center gap-space-xs group" data-path="quick-scan" href="#">
+<div class="w-8 h-8 rounded-full bg-primary-fixed flex items-center justify-center">
+<span class="material-symbols-outlined text-on-primary-fixed text-[18px]">dermatology</span>
+</div>
+<span class="font-headline-sm text-headline-sm tracking-tight text-on-surface">SkinCheck <span class="text-primary font-headline-sm text-headline-sm">AI</span></span>
+</a>
+<nav class="hidden md:flex items-center gap-space-xs p-1 bg-surface-container-low rounded-full">
+<a aria-current="page" class="px-space-md py-1.5 transition-all bg-secondary-container text-on-secondary-container font-medium rounded-full" href="#">Check Skin</a>
+<a class="px-space-md py-1.5 rounded-full font-label-md text-label-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" href="#">Clinical Guide</a>
+<a class="px-space-md py-1.5 rounded-full font-label-md text-label-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" href="#">ABCDE Rules</a>
+<a class="px-space-md py-1.5 rounded-full font-label-md text-label-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" href="#">Privacy & Care</a>
+</nav>
+<div class="flex items-center gap-space-sm">
+<div class="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface-container text-on-surface-variant font-label-sm text-label-sm">
+<span class="w-2 h-2 rounded-full bg-tertiary"></span>CE Marked Tool
+</div>
+<div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-on-primary text-[18px]">person</span>
+</div>
+</div>
+</div>
+</header>
+<main class="w-full pt-16 min-h-[100dvh] bg-surface">
+<div class="flex flex-col w-full">
+<div class="max-w-[1400px] mx-auto w-full px-4 sm:px-8 lg:px-16 py-8 md:py-12 flex flex-col gap-12 lg:gap-16">
+
+<!-- Top Editorial Header Block -->
+<section class="flex flex-col lg:flex-row lg:items-end justify-between gap-6 pb-4">
+<div class="max-w-3xl flex flex-col gap-3">
+<div class="flex items-center gap-2">
+<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface-container text-primary font-label-sm text-label-sm tracking-wider uppercase">
+<span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
+Direct Triage Model v4.2
+</span>
+<span class="font-label-sm text-label-sm text-outline">Ephemeral Memory • HIPAA Safe</span>
+</div>
+<h1 class="font-headline-lg text-headline-lg tracking-tight text-on-surface">
+Free Instant Skin Analysis.
+</h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant max-w-2xl">
+Zero login, zero data retained. High-precision neural screening comparing dermal structure against validated clinical dermoscopic benchmarks.
+</p>
+</div>
+<div class="flex items-center gap-6 lg:justify-end">
+<div class="flex flex-col items-start lg:items-end">
+<span class="font-label-sm text-label-sm text-outline uppercase tracking-wider">Clinical Concordance</span>
+<span class="font-headline-sm text-headline-sm text-on-surface">94.8%</span>
+</div>
+<div class="h-8 w-px bg-surface-container-highest"></div>
+<div class="flex flex-col items-start lg:items-end">
+<span class="font-label-sm text-label-sm text-outline uppercase tracking-wider">Analysis Latency</span>
+<span class="font-headline-sm text-headline-sm text-on-surface">&lt; 1.2s</span>
+</div>
+</div>
+</section>
+
+<!-- Main Working Grid: Asymmetric Bento Layout -->
+<section class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+<!-- Left Column: Acquisition & Visual Reticle Workspace (5 cols) -->
+<div class="lg:col-span-5 flex flex-col gap-6">
+<!-- Interactive Preview Card -->
+<div class="relative bg-surface-container-lowest rounded-xl shadow-[0_20px_40px_-15px_rgba(0,0,0,0.05)] p-6 sm:p-8 flex flex-col gap-6 overflow-hidden">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[20px]">csv</span>
+<span class="font-label-md text-label-md text-on-surface tracking-wide uppercase">Dermoscopic Viewport</span>
+</div>
+<span class="px-2.5 py-0.5 rounded-full bg-surface-container font-label-sm text-label-sm text-on-surface-variant">
+10x Optical Equivalent
+</span>
+</div>
+<!-- Lesion Display with Precision Medical Reticle -->
+<div class="relative w-full aspect-square rounded-lg overflow-hidden bg-surface-container-high flex items-center justify-center group shadow-inner">
+<img id="viewportImage" alt="Dermoscopic view" class="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105" src="https://lh3.googleusercontent.com/aida/AEtjO1WHXddFF76k1EGLi1zhbSmEOVDT5AXrY9RqlsXrvM0lHTuh68wnvwkcGK4gRkMJADmwy3dQV6_iCZZ0Xw0dooo3WkQgjXjYXrUy6F5iRfddpf1biMy1SxuxKrBqXA7l66e8KqVR0CBfD0TVxWURMkm_nVYfRL0SjWczEV6btUy0L5cB6V-Psd65jtRxbnruU3RMWbqLvGKw3CgmE684ChO1Jv0czZpGCS0Wp7Haryf6Wa-6wwn-1hniiWY"/>
+<!-- Clinical Reticle Digital HUD Overlay -->
+<div class="absolute inset-0 pointer-events-none p-4 flex flex-col justify-between">
+<div class="flex justify-between items-start text-surface-container-lowest drop-shadow-[0_1px_2px_rgba(0,0,0,0.7)] font-label-sm text-label-sm">
+<span class="bg-inverse-surface/60 backdrop-blur-md px-2 py-0.5 rounded" id="hudScale">R: 3.82mm</span>
+<span class="bg-inverse-surface/60 backdrop-blur-md px-2 py-0.5 rounded" id="hudAxis">AXIS: 184°</span>
+</div>
+<div class="absolute inset-0 flex items-center justify-center">
+<div class="w-16 h-16 rounded-full border border-surface-container-lowest/40 flex items-center justify-center">
+<div class="w-1 h-1 bg-surface-container-lowest rounded-full shadow-[0_0_8px_white]"></div>
+</div>
+</div>
+<div class="flex justify-between items-end">
+<span class="flex items-center gap-1.5 bg-inverse-surface/75 backdrop-blur-md text-inverse-on-surface px-2.5 py-1 rounded font-label-sm text-label-sm">
+<span class="w-2 h-2 rounded-full bg-tertiary"></span>
+ROI Isolated
+</span>
+<span class="bg-inverse-surface/75 backdrop-blur-md text-inverse-on-surface px-2.5 py-1 rounded font-label-sm text-label-sm" id="hudResolution">
+1240 x 1240 px
+</span>
+</div>
+</div>
+</div>
+<!-- Quality Telemetry Chips -->
+<div class="grid grid-cols-3 gap-3 text-center">
+<div class="bg-surface-container-low p-3 rounded-lg flex flex-col gap-0.5">
+<span class="font-label-sm text-label-sm text-outline">Sharpness</span>
+<span class="font-headline-sm text-body-md font-semibold text-on-surface">Verified (99%)</span>
+</div>
+<div class="bg-surface-container-low p-3 rounded-lg flex flex-col gap-0.5">
+<span class="font-label-sm text-label-sm text-outline">Lighting</span>
+<span class="font-headline-sm text-body-md font-semibold text-on-surface">Balanced</span>
+</div>
+<div class="bg-surface-container-low p-3 rounded-lg flex flex-col gap-0.5">
+<span class="font-label-sm text-label-sm text-outline">Derm-Zone</span>
+<span class="font-headline-sm text-body-md font-semibold text-on-surface">Acral / Torso</span>
+</div>
+</div>
+</div>
+<!-- Drag & Drop Uploader Card -->
+<div class="bg-surface-container-lowest rounded-xl shadow-[0_20px_40px_-15px_rgba(0,0,0,0.05)] p-6 sm:p-8 flex flex-col gap-5">
+<div class="flex items-center justify-between">
+<h2 class="font-headline-sm text-body-lg font-bold text-on-surface">Analyze Different Lesion</h2>
+<span class="font-label-sm text-label-sm text-outline">PNG, JPG, HEIC</span>
+</div>
+<div id="dropzoneContainer" class="flex flex-col items-center justify-center p-8 bg-surface-container-low hover:bg-surface-container rounded-lg cursor-pointer transition-colors text-center group">
+<input type="file" id="fileUploadInput" accept="image/*" class="hidden"/>
+<div class="w-12 h-12 rounded-full bg-surface-container-lowest flex items-center justify-center shadow-sm mb-3 group-hover:scale-105 transition-transform">
+<span class="material-symbols-outlined text-primary text-[24px]">add_a_photo</span>
+</div>
+<span class="font-body-md text-body-md font-medium text-on-surface">Drop image or tap to capture</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant mt-1">Processed entirely in-browser RAM</span>
+</div>
+<button id="analyzeBtn" class="w-full py-3.5 rounded-full bg-primary text-on-primary font-body-md font-medium flex items-center justify-center gap-2 hover:opacity-95 active:scale-[0.98] transition-all shadow-sm">
+<span class="material-symbols-outlined text-[20px]">biotech</span>
+Analyze with DermAssist Engine
+</button>
+</div>
+</div>
+
+<!-- Right Column: Diagnostic & ABCDE Clinical Breakdown (7 cols) -->
+<div class="lg:col-span-7 flex flex-col gap-6">
+<!-- Primary Classification Overview Card -->
+<div class="bg-surface-container-lowest rounded-xl shadow-[0_20px_40px_-15px_rgba(0,0,0,0.05)] p-6 sm:p-10 flex flex-col gap-8">
+<!-- Assessment Header Pill & Diagnosis -->
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6">
+<div class="flex flex-col gap-1.5">
+<div class="flex items-center gap-2">
+<span class="font-label-sm text-label-sm text-outline uppercase tracking-widest">Primary Classification</span>
+<span class="w-1 h-1 rounded-full bg-outline"></span>
+<span class="font-label-sm text-label-sm text-outline" id="icdCode">ICD-11: 2F22.0</span>
+</div>
+<h2 id="diagnosisTitle" class="font-headline-md text-headline-md text-on-surface tracking-tight">
+Likely Benign Atypical Nevus
+</h2>
+</div>
+<!-- Confidence Badge -->
+<div id="confidenceBadge" class="self-start sm:self-auto inline-flex items-center gap-2 px-4 py-2 rounded-full bg-surface-container-low text-on-surface shadow-sm">
+<span class="w-2.5 h-2.5 rounded-full bg-tertiary" id="confidenceDot"></span>
+<span id="confidenceText" class="font-label-md text-label-md font-semibold">94.2% Benign Probability</span>
+</div>
+</div>
+
+<!-- Risk Spectrum Scale Meter -->
+<div class="flex flex-col gap-3 p-5 rounded-lg bg-surface-container-low">
+<div class="flex items-center justify-between font-label-sm text-label-sm text-on-surface">
+<span class="font-medium">Stratified Risk Scale</span>
+<span id="riskScaleText" class="text-tertiary font-semibold uppercase tracking-wider">Minimal Concern (Grade 1)</span>
+</div>
+<div class="relative w-full h-3 rounded-full bg-surface-container overflow-hidden">
+<div class="absolute left-0 top-0 bottom-0 w-full flex">
+<div class="w-1/3 h-full bg-tertiary-fixed"></div>
+<div class="w-1/3 h-full bg-secondary-fixed"></div>
+<div class="w-1/3 h-full bg-error-container"></div>
+</div>
+<div id="riskPin" class="absolute top-0 bottom-0 left-[22%] w-1.5 bg-on-surface rounded-full shadow-sm"></div>
+</div>
+<div class="flex justify-between font-label-sm text-label-sm text-outline pt-1">
+<span>Low (Routine)</span>
+<span>Moderate (Monitor)</span>
+<span>High (Biopsy Urged)</span>
+</div>
+</div>
+
+<!-- ABCDE Clinical Criteria Matrix -->
+<div class="flex flex-col gap-4">
+<div class="flex items-center justify-between">
+<h3 class="font-headline-sm text-body-lg font-bold text-on-surface">ABCDE Dermatological Matrix</h3>
+<span class="font-label-sm text-label-sm text-outline">Standardized Dermoscopy Criteria</span>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+<div class="p-4 rounded-lg bg-surface-container-low flex flex-col gap-2">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="w-6 h-6 rounded-full bg-surface-container-lowest font-label-sm text-label-sm flex items-center justify-center font-bold text-on-surface">A</span>
+<span class="font-body-md text-body-md font-medium text-on-surface">Asymmetry</span>
+</div>
+<span class="font-label-sm text-label-sm px-2 py-0.5 rounded-full bg-secondary-fixed text-on-secondary-fixed font-medium">Mild (0.24)</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">High dual-axis radial symmetry across polar planes with balanced melanin density.</p>
+</div>
+
+<div class="p-4 rounded-lg bg-surface-container-low flex flex-col gap-2">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="w-6 h-6 rounded-full bg-surface-container-lowest font-label-sm text-label-sm flex items-center justify-center font-bold text-on-surface">B</span>
+<span class="font-body-md text-body-md font-medium text-on-surface">Border Regularity</span>
+</div>
+<span class="font-label-sm text-label-sm px-2 py-0.5 rounded-full bg-secondary-fixed text-on-secondary-fixed font-medium">Distinct</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Clean peripheral boundaries; absent notched, scalloped, or blurred dendritic margins.</p>
+</div>
+
+<div class="p-4 rounded-lg bg-surface-container-low flex flex-col gap-2">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="w-6 h-6 rounded-full bg-surface-container-lowest font-label-sm text-label-sm flex items-center justify-center font-bold text-on-surface">C</span>
+<span class="font-body-md text-body-md font-medium text-on-surface">Color Homogeneity</span>
+</div>
+<span class="font-label-sm text-label-sm px-2 py-0.5 rounded-full bg-secondary-fixed text-on-secondary-fixed font-medium">Uniform Hue</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Uniform pigment network. No chaotic multi-tone pigmentation (black/red/blue absent).</p>
+</div>
+
+<div class="p-4 rounded-lg bg-surface-container-low flex flex-col gap-2">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="w-6 h-6 rounded-full bg-surface-container-lowest font-label-sm text-label-sm flex items-center justify-center font-bold text-on-surface">D</span>
+<span class="font-body-md text-body-md font-medium text-on-surface">Diameter Check</span>
+</div>
+<span class="font-label-sm text-label-sm px-2 py-0.5 rounded-full bg-secondary-fixed text-on-secondary-fixed font-medium">3.8 mm</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Well beneath the 6.0 mm threshold typical of concerning melanoma evolutions.</p>
+</div>
+</div>
+
+<div class="p-4 rounded-lg bg-surface-container-low flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+<div class="flex items-start gap-3">
+<span class="w-6 h-6 rounded-full bg-surface-container-lowest font-label-sm text-label-sm flex items-center justify-center font-bold text-on-surface shrink-0 mt-0.5">E</span>
+<div>
+<div class="font-body-md text-body-md font-medium text-on-surface">Evolution (Baseline Registered)</div>
+<div class="font-body-sm text-body-sm text-on-surface-variant">Comparative repeat capture recommended in 90 days.</div>
+</div>
+</div>
+<button class="shrink-0 px-3 py-1.5 rounded-full bg-surface-container hover:bg-surface-container-high text-on-surface font-label-md text-label-md transition-all">Set Reminder</button>
+</div>
+</div>
+
+<!-- Action Buttons -->
+<div class="pt-4 flex flex-col sm:flex-row items-center gap-4">
+<button id="downloadPdfBtn" class="w-full sm:w-auto px-6 py-3.5 rounded-full bg-primary text-on-primary font-body-md font-medium flex items-center justify-center gap-2 hover:opacity-95 active:scale-[0.98] transition-all shadow-sm">
+<span class="material-symbols-outlined text-[20px]">download</span>
+Download Clinical Summary (PDF)
+</button>
+<button id="forwardDoctorBtn" class="w-full sm:w-auto px-6 py-3.5 rounded-full bg-surface-container hover:bg-surface-container-high text-on-surface font-body-md font-medium flex items-center justify-center gap-2 transition-all">
+<span class="material-symbols-outlined text-[20px]">share</span>
+Forward to Dermatologist
+</button>
+</div>
+</div>
+</div>
+</section>
+
+<!-- Bottom Guidance -->
+<section class="flex flex-col gap-8 pt-6">
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
+<div>
+<span class="font-label-sm text-label-sm text-outline uppercase tracking-wider">Clinical Imaging Standards</span>
+<h2 class="font-headline-md text-headline-md text-on-surface mt-1">How to Capture an Accurate Lesion Photo</h2>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant max-w-md">
+Diagnostic accuracy depends critically on focal distance, ambient diffuse illumination, and lesion isolation.
+</p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<div class="bg-surface-container-lowest rounded-xl shadow-[0_20px_40px_-15px_rgba(0,0,0,0.05)] p-8 flex flex-col gap-4">
+<div class="w-12 h-12 rounded-full bg-surface-container flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[24px]">wb_sunny</span>
+</div>
+<div class="flex flex-col gap-1">
+<span class="font-label-sm text-label-sm text-outline">Rule 01</span>
+<h3 class="font-headline-sm text-body-lg font-bold text-on-surface">Diffuse, Indirect Lighting</h3>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant">
+Avoid strong direct flashlight glare. Daytime window light without direct sun rays yields optimal skin contrast.
+</p>
+</div>
+<div class="bg-surface-container-lowest rounded-xl shadow-[0_20px_40px_-15px_rgba(0,0,0,0.05)] p-8 flex flex-col gap-4">
+<div class="w-12 h-12 rounded-full bg-surface-container flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[24px]">center_focus_strong</span>
+</div>
+<div class="flex flex-col gap-1">
+<span class="font-label-sm text-label-sm text-outline">Rule 02</span>
+<h3 class="font-headline-sm text-body-lg font-bold text-on-surface">Macro Distance (10–15 cm)</h3>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant">
+Hold lens roughly four inches away. Ensure camera autofocus locks firmly on the lesion edge.
+</p>
+</div>
+<div class="bg-surface-container-lowest rounded-xl shadow-[0_20px_40px_-15px_rgba(0,0,0,0.05)] p-8 flex flex-col gap-4">
+<div class="w-12 h-12 rounded-full bg-surface-container flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[24px]">straighten</span>
+</div>
+<div class="flex flex-col gap-1">
+<span class="font-label-sm text-label-sm text-outline">Rule 03</span>
+<h3 class="font-headline-sm text-body-lg font-bold text-on-surface">Include Reference Scale</h3>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant">
+For maximum millimeter precision, place a coin or metric ruler 1 cm alongside the mole.
+</p>
+</div>
+</div>
+</section>
+
+</div>
+</div>
+</main>
+<footer class="w-full bg-surface-container-low py-12 mt-space-xl">
+<div class="max-w-7xl mx-auto px-6 lg:px-12 flex flex-col md:flex-row items-center justify-between gap-space-md">
+<div class="flex items-center gap-space-xs">
+<span class="font-headline-sm text-headline-sm text-on-surface">SkinCheck AI</span>
+<span class="text-on-surface-variant font-body-sm text-body-sm">— Clinical triage & melanoma screening assistance. Zero log-in required.</span>
+</div>
+<div class="flex items-center gap-space-md">
+<a class="font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors" href="#">Medical Disclaimer</a>
+<a class="font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors" href="#">Data Sovereignty</a>
+</div>
+</div>
+</footer>
+</body>
+</html>

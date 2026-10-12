@@ -4,10 +4,10 @@ import { Brain, Cpu, Layers, CheckCircle2, Loader2, ShieldCheck } from "lucide-r
 import { cn } from "@/lib/utils";
 
 const SCAN_STAGES = [
-  { id: 1, text: "Normalizing RGB Tensor Matrix (380x380)", icon: Cpu },
-  { id: 2, text: "Running EfficientNet-B4 Convolutional Inference", icon: Brain },
-  { id: 3, text: "Calibrating Temperature Logits (ECE < 5%)", icon: ShieldCheck },
-  { id: 4, text: "Extracting Grad-CAM Feature Saliency Map", icon: Layers },
+  { id: 1, text: "Normalizing Image Matrix (380x380)", icon: Cpu },
+  { id: 2, text: "Analyzing Cellular Structure and Borders", icon: Brain },
+  { id: 3, text: "Calibrating Probabilities", icon: ShieldCheck },
+  { id: 4, text: "Extracting Visual Saliency Map", icon: Layers },
   { id: 5, text: "Generating Clinical Triage Narrative", icon: CheckCircle2 },
 ];
 
@@ -42,7 +42,7 @@ export const ImageScanLoader = ({ active = false, imagePreview = null }) => {
               <img src={imagePreview} alt="Scanning Lesion" className="h-full w-full object-cover" />
             ) : (
               <div className="flex h-full w-full items-center justify-center text-slate-500 font-mono text-xs">
-                Acquiring Tensor...
+                Processing image...
               </div>
             )}
             {/* Glowing Laser Scan Bar */}
@@ -58,7 +58,7 @@ export const ImageScanLoader = ({ active = false, imagePreview = null }) => {
             DermAssist Engine Analyzing
           </h3>
           <p className="mt-1 text-xs text-slate-500 font-mono">
-            Sub-250ms edge ONNX inference pipeline
+            Deep learning skin lesion triage pipeline
           </p>
 
           {/* Stepped progress indicators */}

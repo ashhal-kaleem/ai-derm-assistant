@@ -109,7 +109,7 @@ export default function ScanScreen({ onAnalysisComplete, addToast }) {
           />
 
           <p className="text-slate-600 text-sm sm:text-base max-w-xl mx-auto mb-6 leading-relaxed">
-            Instant calibrated multi-class skin lesion evaluation powered by EfficientNet-B4 ONNX edge inference and Grad-CAM spatial explainability.
+            Upload or photograph a skin lesion for preliminary screening and visual heatmap analysis.
           </p>
 
           {/* 12. Stepper Component */}

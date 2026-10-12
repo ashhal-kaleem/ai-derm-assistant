@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Sparkles, MapPin } from "lucide-react";
+import { Scan, MapPin } from "lucide-react";
 import { FloatingNav } from "@/components/ui/floating-navbar";
 import { ToastStack } from "@/components/ui/animated-toast-stack";
 import ScanScreen from "@/components/ScanScreen";
@@ -40,7 +40,7 @@ export default function App() {
   };
 
   const navItems = [
-    { id: "scan", name: "Scan & Analyze", icon: <Sparkles className="w-3.5 h-3.5" /> },
+    { id: "scan", name: "Scan & Analyze", icon: <Scan className="w-3.5 h-3.5" /> },
     { id: "clinics", name: "Clinic Finder", icon: <MapPin className="w-3.5 h-3.5" /> },
   ];
 

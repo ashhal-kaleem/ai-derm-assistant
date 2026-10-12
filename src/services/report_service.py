@@ -1,5 +1,7 @@
 import base64
 import io
+import html
+import re
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 from PIL import Image
@@ -180,8 +182,11 @@ class ReportService:
         explanation = prediction.get("llm_explanation") or prediction.get("clinical_summary")
         if explanation:
             story.append(Paragraph("Clinical Analysis & Patient Guidance", self.heading_style))
-            # Clean up potential markdown formatting for reportlab
-            clean_text = explanation.replace("### ", "<b>").replace("## ", "<b>").replace("**", "<b>")
+            # Safely format markdown for ReportLab Paragraph XML parser
+            clean_text = html.escape(explanation)
+            clean_text = re.sub(r"\*\*(.+?)\*\*", r"<b>\1</b>", clean_text)
+            clean_text = re.sub(r"^#{1,6}\s*(.+?)$", r"<b>\1</b>", clean_text, flags=re.M)
+            clean_text = re.sub(r"`(.+?)`", r"<i>\1</i>", clean_text)
             clean_text = clean_text.replace("\n\n", "<br/><br/>").replace("\n", "<br/>")
             story.append(Paragraph(clean_text, self.body_style))
             story.append(Spacer(1, 8))

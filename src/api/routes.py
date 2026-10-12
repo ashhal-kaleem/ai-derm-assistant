@@ -34,6 +34,7 @@ from src.domain.models import (
     ScanRecord,
     categorize_uncertainty,
     map_risk_tier,
+    CLASS_NAMES,
 )
 from src.services.groq_service import GroqService
 from src.services.history_service import HistoryService
@@ -102,7 +103,8 @@ async def predict_lesion(
     # 1. Map to PRD v2.0 3-Tier Risk Badge (green / yellow / red)
     v2_risk_level, v2_risk_label = map_risk_tier(prediction.top_class)
     v2_uncertainty = categorize_uncertainty(prediction.uncertainty_score)
-    all_probs = [round(float(p.probability), 4) for p in prediction.probabilities]
+    probs_by_code = {p.code: round(float(p.probability), 4) for p in prediction.probabilities}
+    all_probs = [probs_by_code.get(c, 0.0) for c in CLASS_NAMES]
 
     # 2. Generate Groq clinical advisory summary
     clinical_summary = None

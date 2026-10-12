@@ -413,5 +413,97 @@ For maximum millimeter precision, place a coin or metric ruler 1 cm alongside th
 </div>
 </div>
 </footer>
+<script>
+const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  ? 'http://localhost:8000'
+  : 'https://ai-derm-assistant-api.onrender.com';
+
+let currentFile = null;
+let currentPrediction = null;
+
+const fileInput = document.getElementById('fileUploadInput');
+const dropzone = document.getElementById('dropzoneContainer');
+const viewportImg = document.getElementById('viewportImage');
+const analyzeBtn = document.getElementById('analyzeBtn');
+const diagTitle = document.getElementById('diagnosisTitle');
+const confText = document.getElementById('confidenceText');
+const confDot = document.getElementById('confidenceDot');
+const riskText = document.getElementById('riskScaleText');
+const riskPin = document.getElementById('riskPin');
+const downloadPdfBtn = document.getElementById('downloadPdfBtn');
+const forwardDoctorBtn = document.getElementById('forwardDoctorBtn');
+
+if (dropzone && fileInput) {
+  dropzone.addEventListener('click', () => fileInput.click());
+  fileInput.addEventListener('change', () => {
+    if (fileInput.files && fileInput.files[0]) {
+      currentFile = fileInput.files[0];
+      const reader = new FileReader();
+      reader.onload = (e) => { if (viewportImg) viewportImg.src = e.target.result; };
+      reader.readAsDataURL(currentFile);
+    }
+  });
+}
+
+if (analyzeBtn) {
+  analyzeBtn.addEventListener('click', async () => {
+    if (!currentFile) { alert('Please select or capture an image first.'); return; }
+    const origText = analyzeBtn.innerHTML;
+    analyzeBtn.disabled = true;
+    analyzeBtn.innerHTML = 'Analyzing...';
+    try {
+      const formData = new FormData();
+      formData.append('file', currentFile);
+      const resp = await fetch(`${API_BASE_URL}/predict`, { method: 'POST', body: formData });
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const data = await resp.json();
+      currentPrediction = data;
+      if (diagTitle) diagTitle.textContent = data.class_name;
+      if (confText) confText.textContent = `${(data.confidence * 100).toFixed(1)}% ${data.risk_label} Probability`;
+      if (riskText) riskText.textContent = `${data.risk_label.toUpperCase()} (Grade ${(data.confidence * 100).toFixed(0)}%)`;
+      if (riskPin) {
+        if (data.risk_level === 'green') riskPin.style.left = '16%';
+        else if (data.risk_level === 'yellow') riskPin.style.left = '50%';
+        else riskPin.style.left = '84%';
+      }
+      if (data.heatmap_b64 && viewportImg) viewportImg.src = data.heatmap_b64;
+      analyzeBtn.innerHTML = 'Analysis Complete';
+      setTimeout(() => { analyzeBtn.disabled = false; analyzeBtn.innerHTML = origText; }, 2500);
+    } catch (err) {
+      alert('Inference error: ' + err.message);
+      analyzeBtn.disabled = false;
+      analyzeBtn.innerHTML = origText;
+    }
+  });
+}
+
+if (downloadPdfBtn) {
+  downloadPdfBtn.addEventListener('click', async () => {
+    if (!currentPrediction) { alert('Please analyze an image first.'); return; }
+    try {
+      const resp = await fetch(`${API_BASE_URL}/report`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          patient_id: 'PT-ONLINE',
+          diagnosis: currentPrediction.class_name,
+          confidence: currentPrediction.confidence,
+          risk_level: currentPrediction.risk_level,
+          clinical_notes: currentPrediction.llm_explanation || 'DermAssist AI screening report.'
+        })
+      });
+      if (!resp.ok) throw new Error('PDF generation failed');
+      const blob = await resp.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `dermassist_report.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    } catch (e) { alert(e.message); }
+  });
+}
+</script>
 </body>
 </html>

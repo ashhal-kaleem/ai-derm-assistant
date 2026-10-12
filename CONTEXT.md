@@ -10,12 +10,12 @@
 
 ## 🧭 1. Project Snapshot & Runtime State
 - **Core Purpose:** Calibrated, explainable, ultra-lightweight skin lesion diagnostic assistant with zero patient leakage and sub-250ms ONNX inference.
-- **Current Honest State:** Phase 4 completed (Streamlit UI, Health Probe, and 10 tests verified exit code 0).
+- **Current Honest State:** Phase 4 completed (Decoupled Vercel Frontend + Render Backend, 19 tests verified exit code 0).
 - **Active Working Branch:** `main`
 - **Local Dev Environment:**
   | Service | Host / Port | Status | Verification Command |
   |---|---|---|---|
-  | Streamlit Web App | `localhost:8501` | Stopped | `curl -sI http://localhost:8501/_stcore/health` |
+  | FastAPI REST API | `localhost:8000` | Ready | `curl -sI http://localhost:8000/health` |
   | Cloud DB | Supabase (PostgreSQL) | Remote Cloud | `curl -sI $SUPABASE_URL` |
 | Cloud Storage | Supabase (`scans` bucket) | Remote Cloud | Supabase Storage API |
 - **Live Production URL:** Not yet deployed (Target: HuggingFace Spaces)
@@ -104,10 +104,10 @@ Every task follows a strict 4-step atomic verification cycle:
 
 ---
 
-### Phase 4 — Presentation & Web Application (Streamlit)
-- [x] **4.1 Production Google Stitch UI Integration** → verified: app/stitch_screen.html + app/app.py live inference (Exit Code 0)
-- [x] **4.2 Heatmap Overlay & Confidence Visualizer** → verify: `python3 tests/smoke_ui_components.py`
-- [x] **4.3 Mandatory Medical Disclaimer Enforcement** → verify: `grep -rn "Disclaimer" app/app.py`
+### Phase 4 — Presentation ### Phase 4 — Presentation & Web Application (Streamlit) Web Application (Vercel Frontend + Render Backend)
+- [x] **4.1 Production Google Stitch UI Integration** → verified: frontend/index.html (HTML5/JS + live REST API bindings)
+- [x] **4.2 Heatmap Overlay - [x] **4.2 Heatmap Overlay & Confidence Visualizer** → verify: `python3 tests/smoke_ui_components.py` Confidence Visualizer** → verified: Real-time Grad-CAM base64 injection into AI Heatmap Viewport
+- [x] **4.3 Mandatory Medical Disclaimer Enforcement** → verified: Permanent clinical disclaimer banner in frontend/index.html
 
 ---
 

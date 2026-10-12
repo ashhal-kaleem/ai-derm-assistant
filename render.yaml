@@ -3,6 +3,7 @@ services:
     name: ai-derm-assistant-api
     runtime: python
     plan: free
+    healthCheckPath: /health
     region: oregon
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn src.api.main:app --host 0.0.0.0 --port $PORT

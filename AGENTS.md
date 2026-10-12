@@ -26,21 +26,21 @@
 | Action | Command | Notes |
 |---|---|---|
 | **Install Dependencies** | `pip install -r requirements.txt` | Locked virtual environment |
-| **Run Dev / Local App** | `streamlit run app/app.py` | Local Streamlit UI on :8501 |
+| **Run Frontend (Vercel Dev)** | `npx serve frontend` | Vercel Static Web Client on :3000 |
 | **Run REST API Server** | `uvicorn src.api.main:app --port 8000 --reload` | FastAPI REST API on :8000 (/docs) |
 | **Run All Tests** | `pytest tests/ -v` | Full test suite verification |
 | **Run Leakage Test** | `pytest tests/test_dataset_leakage.py -v` | Validates 0 patient overlap |
 | **Run Calibration Test** | `pytest tests/test_calibration.py -v` | Validates ECE optimization |
 | **Typecheck** | `mypy src/ --ignore-missing-imports` | 0 errors required |
-| **Lint & Format** | `ruff check src/ app/ tests/` | Enforce code style |
-| **Healthcheck / Smoke** | `curl -sI http://localhost:8501/_stcore/health` | Live Streamlit server probe |
+| **Lint & Format** | `ruff check src/ tests/` | Enforce code style |
+| **Healthcheck / Smoke** | `curl -sI http://localhost:8000/health` | Live FastAPI backend probe |
 
 ---
 
 ## 🧭 System Overview & Architecture Summary
 - **Domain**: AI Dermatology Assistant & Skin Lesion Diagnostic Support (HAM10000 benchmark)
 - **Target Archetype**: Web / Machine Learning Inference System (Archetypes 5 & 6)
-- **Core Architecture**: Modular Clean Architecture (`src/` domain engine, ONNX inference runtime, Groq LPU clinical adapter, Streamlit UI)
+- **Core Architecture**: Modular Clean Architecture (`src/` domain engine, ONNX inference runtime, Groq LPU clinical adapter, Vercel Frontend UI)
 - **Primary Specifications**: Read `docs/architecture.md` and `docs/PRD.md` before making architectural decisions.
 - **Living Memory**: Read `CONTEXT.md` at the start of every session; update it before completing work.
 - **Decisions Memory**: Inspect `decisions.log` for past project invariants.
@@ -60,7 +60,7 @@ ai-derm-assistant/
 │   ├── core/                  # Settings (config.py), Lifespan │   ├── core/                  # ONNX engine, calibration, Grad-CAM, dataset RFC 9457 exceptions
 │   ├── services/              # InferenceService, GroqService, HistoryService
 │   └── infrastructure/        # ONNX runtime engine, Grad-CAM │   └── infrastructure/        # Supabase Cloud Client & Repositories Supabase repo
-├── app/                       # Streamlit Web Presentation Layer
+├── frontend/                  # Vercel Web Presentation Layer (HTML/JS Stitch UI)
 ├── notebooks/                 # EDA, training, and ablation analysis
 ├── tests/                     # Automated test gates (leakage, calibration, inference)
 ├── checkpoints/               # Trained model weights (ONNX format)
@@ -81,7 +81,7 @@ ai-derm-assistant/
 ## 🏛️ Core Architectural Invariants (The Sovereign Law)
 
 1. **Strict One-Way Dependency Flow**:
-   $$\text{Streamlit UI} \longrightarrow \text{Services} \longrightarrow \text{Core Domain Engine} \longrightarrow \text{Infrastructure / Adapters}$$
+   $$\text{Vercel Frontend UI} \longrightarrow \text{Services} \longrightarrow \text{Core Domain Engine} \longrightarrow \text{Infrastructure / Adapters}$$
    Presentation components are strictly forbidden from directly querying raw database tables or executing low-level tensor transforms.
 2. **Zero Patient-Level Data Leakage**:
    All dataset splitting must group by `lesion_id` using `StratifiedGroupKFold`. Train and validation sets must have zero lesion intersection.

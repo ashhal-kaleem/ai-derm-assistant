@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { Sparkles, History, MapPin, ShieldAlert } from "lucide-react";
+import { Sparkles, MapPin, ShieldAlert } from "lucide-react";
 import { FloatingNav } from "@/components/ui/floating-navbar";
 import { ToastStack } from "@/components/ui/animated-toast-stack";
 import ScanScreen from "@/components/ScanScreen";
 import ResultScreen from "@/components/ResultScreen";
-import HistoryScreen from "@/components/HistoryScreen";
 import ClinicFinderScreen from "@/components/ClinicFinderScreen";
 import Footer from "@/components/Footer";
 import { API_BASE_URL } from "@/config";
@@ -42,7 +41,6 @@ export default function App() {
 
   const navItems = [
     { id: "scan", name: "Scan & Analyze", icon: <Sparkles className="w-3.5 h-3.5" /> },
-    { id: "history", name: "Lesion History", icon: <History className="w-3.5 h-3.5" /> },
     { id: "clinics", name: "Clinic Finder", icon: <MapPin className="w-3.5 h-3.5" /> },
   ];
 
@@ -85,9 +83,6 @@ export default function App() {
           />
         )}
 
-        {currentScreen === "history" && (
-          <HistoryScreen onStartNewScan={() => setCurrentScreen("scan")} />
-        )}
 
         {currentScreen === "clinics" && (
           <ClinicFinderScreen

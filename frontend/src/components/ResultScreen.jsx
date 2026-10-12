@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import {
   FileDown,
-  BookmarkPlus,
   MapPin,
   RefreshCw,
 
@@ -18,7 +17,6 @@ import { Progress } from "@/components/ui/progress";
 import { CountUp } from "@/components/ui/count-up";
 import { TextGenerateEffect } from "@/components/ui/text-generate-effect";
 import { ProbabilityBarChart } from "@/components/ui/probability-bar-chart";
-import { MorphingModal } from "@/components/ui/morphing-modal";
 import { SpotlightCard } from "@/components/ui/spotlight-card";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { API_BASE_URL, STATIC_KNOWLEDGE_CARDS } from "@/config";
@@ -30,11 +28,6 @@ export default function ResultScreen({
   onFindDoctors,
   addToast
 }) {
-  const [isTrackModalOpen, setIsTrackModalOpen] = useState(false);
-  const [patientId, setPatientId] = useState("PT-" + Math.floor(1000 + Math.random() * 9000));
-  const [anatomicalSite, setAnatomicalSite] = useState("");
-  const [clinicalNotes, setClinicalNotes] = useState("");
-  const [isSavingHistory, setIsSavingHistory] = useState(false);
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
 
   if (!prediction) {
@@ -74,7 +67,6 @@ export default function ResultScreen({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          patient_id: patientId,
           diagnosis: prediction.class_name,
           confidence: prediction.confidence,
           risk_level: prediction.risk_level,
@@ -109,50 +101,6 @@ export default function ResultScreen({
       }
     } finally {
       setIsDownloadingPdf(false);
-    }
-  };
-
-  // Handle lesion tracking POST /history
-  const handleSaveToHistory = async (e) => {
-    e.preventDefault();
-    setIsSavingHistory(true);
-    try {
-      const payload = {
-        patient_id: patientId,
-        lesion_id: prediction.lesion_id || `lesion_${Date.now()}`,
-        class_name: prediction.class_name,
-        confidence: prediction.confidence,
-        risk_level: prediction.risk_level,
-        notes: clinicalNotes || `Registered ${prediction.class_name} at ${anatomicalSite || "unspecified site"}.`,
-        image_url: prediction.image_url || ""
-      };
-
-      const res = await fetch(`${API_BASE_URL}/history`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
-
-      if (!res.ok) throw new Error("Failed to register lesion in history.");
-
-      setIsTrackModalOpen(false);
-      if (addToast) {
-        addToast({
-          type: "success",
-          title: "Lesion Registered",
-          message: "Saved to longitudinal lesion history."
-        });
-      }
-    } catch (err) {
-      if (addToast) {
-        addToast({
-          type: "error",
-          title: "Error Saving",
-          message: err.message
-        });
-      }
-    } finally {
-      setIsSavingHistory(false);
     }
   };
 
@@ -287,10 +235,10 @@ export default function ResultScreen({
             </button>
 
             <button
-              onClick={() => setIsTrackModalOpen(true)}
-              className="flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-white hover:bg-slate-50 border border-slate-300 text-slate-800 text-xs font-semibold shadow-xs transition-colors"
+              onClick={onFindDoctors}
+              className="flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-white hover:bg-slate-50 border border-emerald-300 text-emerald-900 text-xs font-semibold shadow-xs transition-colors"
             >
-              <BookmarkPlus className="w-4 h-4 text-emerald-700" /> Track This Lesion
+              <MapPin className="w-4 h-4 text-emerald-700" /> Find Nearby Clinics
             </button>
           </div>
         </div>
@@ -310,83 +258,6 @@ export default function ResultScreen({
         </AlertDescription>
       </Alert>
 
-      {/* 21. Morphing Modal: Track Lesion Form */}
-      <MorphingModal
-        isOpen={isTrackModalOpen}
-        onClose={() => setIsTrackModalOpen(false)}
-        title="Register Lesion in Longitudinal History"
-      >
-        <form onSubmit={handleSaveToHistory} className="space-y-4">
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">
-              Patient Identifier
-            </label>
-            <input
-              type="text"
-              value={patientId}
-              onChange={(e) => setPatientId(e.target.value)}
-              required
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">
-              Anatomical Site / Location
-            </label>
-            <input
-              type="text"
-              placeholder="e.g. Left upper arm, Upper back"
-              value={anatomicalSite}
-              onChange={(e) => setAnatomicalSite(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">
-              Clinical Notes & Progression
-            </label>
-            <textarea
-              rows={3}
-              placeholder="Record any noticed change in size, shape, borders, or color..."
-              value={clinicalNotes}
-              onChange={(e) => setClinicalNotes(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
-            />
-          </div>
-
-          <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs flex justify-between items-center font-mono">
-            <span>Diagnosed: <strong>{prediction.class_name}</strong></span>
-            <span>Confidence: <strong>{confidencePercent.toFixed(1)}%</strong></span>
-          </div>
-
-          <div className="flex justify-end gap-3 pt-2">
-            <button
-              type="button"
-              onClick={() => setIsTrackModalOpen(false)}
-              className="px-4 py-2 text-xs font-medium text-slate-600 hover:text-slate-900"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isSavingHistory}
-              className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold flex items-center gap-2 shadow-md transition-all"
-            >
-              {isSavingHistory ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" /> Saving...
-                </>
-              ) : (
-                <>
-                  <CheckCircle2 className="w-4 h-4" /> Save to Timeline
-                </>
-              )}
-            </button>
-          </div>
-        </form>
-      </MorphingModal>
     </div>
   );
 }

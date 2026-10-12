@@ -3,6 +3,7 @@ services:
     name: ai-derm-assistant-api
     runtime: python
     plan: free
+    rootDir: backend
     healthCheckPath: /health
     region: oregon
     buildCommand: pip install -r requirements.txt

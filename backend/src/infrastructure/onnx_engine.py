@@ -42,6 +42,10 @@ class ONNXInferenceEngine:
         """Initialize ONNX session from file or stream from HuggingFace Hub."""
         resolved_path = model_path or "checkpoints/efficientnet_b4_ham10000.onnx"
         self.model_path = resolved_path
+        if not os.path.exists(resolved_path):
+            alt_path = os.path.join(os.path.dirname(__file__), "..", "..", "checkpoints", "efficientnet_b4_ham10000.onnx")
+            if os.path.exists(alt_path):
+                resolved_path = alt_path
 
         # If HF repo is configured and no local file exists, download on boot
         if not resolved_path and hf_repo_id and hf_hub_download:

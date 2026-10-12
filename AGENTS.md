@@ -25,14 +25,14 @@
 
 | Action | Command | Notes |
 |---|---|---|
-| **Install Dependencies** | `pip install -r requirements.txt` | Locked virtual environment |
+| **Install Dependencies** | `.venv/bin/pip install -r backend/requirements.txt` | Locked virtual environment |
 | **Run Frontend (Vercel Dev)** | `npx serve frontend` | Vercel Static Web Client on :3000 |
-| **Run REST API Server** | `uvicorn src.api.main:app --port 8000 --reload` | FastAPI REST API on :8000 (/docs) |
-| **Run All Tests** | `pytest tests/ -v` | Full test suite verification |
-| **Run Leakage Test** | `pytest tests/test_dataset_leakage.py -v` | Validates 0 patient overlap |
-| **Run Calibration Test** | `pytest tests/test_calibration.py -v` | Validates ECE optimization |
+| **Run REST API Server** | `cd backend && uvicorn src.api.main:app --port 8000 --reload` | FastAPI REST API on :8000 (/docs) |
+| **Run All Tests** | `pytest backend/tests/ -v` | Full test suite verification |
+| **Run Leakage Test** | `pytest backend/tests/test_dataset_leakage.py -v` | Validates 0 patient overlap |
+| **Run Calibration Test** | `pytest backend/tests/test_calibration.py -v` | Validates ECE optimization |
 | **Typecheck** | `mypy src/ --ignore-missing-imports` | 0 errors required |
-| **Lint & Format** | `ruff check src/ tests/` | Enforce code style |
+| **Lint & Format** | `ruff check backend/src/ backend/tests/` | Enforce code style |
 | **Healthcheck / Smoke** | `curl -sI http://localhost:8000/health` | Live FastAPI backend probe |
 
 ---
@@ -53,17 +53,15 @@
 ai-derm-assistant/
 ├── docs/                      # Architectural specifications & PRD (SSOT)
 │   ├── PRD.md                 # Product & Business SSOT
-│   └── architecture.md        # Technical SSOT: topology, schemas, runbook
-├── src/                       # Core ML Engine, domain entities & services
-│   ├── api/                  # FastAPI REST endpoints & schemas
-│   ├── domain/                # Pure business logic, calibration │   ├── domain/                # Pure business logic & clinical schemas schemas
-│   ├── core/                  # Settings (config.py), Lifespan │   ├── core/                  # ONNX engine, calibration, Grad-CAM, dataset RFC 9457 exceptions
-│   ├── services/              # InferenceService, GroqService, HistoryService
-│   └── infrastructure/        # ONNX runtime engine, Grad-CAM │   └── infrastructure/        # Supabase Cloud Client & Repositories Supabase repo
+├── backend/                   # Render REST API, ONNX Runtime Engine & Tests
+│   ├── src/                   # Core ML Engine, domain entities & services
+│   ├── checkpoints/           # Trained model weights (ONNX format)
+│   ├── tests/                 # Automated test gates (leakage, calibration, inference)
+│   ├── requirements.txt       # Backend dependencies
+│   ├── Dockerfile             # Production container definition
+│   └── render.yaml            # Render service configuration
 ├── frontend/                  # Vercel Web Presentation Layer (HTML/JS Stitch UI)
 ├── notebooks/                 # EDA, training, and ablation analysis
-├── tests/                     # Automated test gates (leakage, calibration, inference)
-├── checkpoints/               # Trained model weights (ONNX format)
 ├── CONTEXT.md                 # Living workspace memory & active task state
 ├── AGENTS.md                  # Developer guidelines & architectural invariants
 ├── CHANGELOG.md               # Versioning & release history

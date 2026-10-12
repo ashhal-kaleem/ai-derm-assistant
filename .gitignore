@@ -17,3 +17,9 @@ venv/
 !.env.example
 .playwright-mcp/
 scratch/
+backend/.env
+backend/.env.*
+backend/checkpoints/*.pt
+backend/checkpoints/*.onnx
+!backend/checkpoints/efficientnet_b4_ham10000.onnx
+!backend/.env.example

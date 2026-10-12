@@ -18,7 +18,7 @@
   | FastAPI REST API | `localhost:8000` | Ready | `curl -sI http://localhost:8000/health` |
   | Cloud DB | Supabase (PostgreSQL) | Remote Cloud | `curl -sI $SUPABASE_URL` |
 | Cloud Storage | Supabase (`scans` bucket) | Remote Cloud | Supabase Storage API |
-- **Live Production URL:** Not yet deployed (Target: HuggingFace Spaces)
+- **Live Production URL:** Not yet deployed (Target: Render (Backend) & Vercel (Frontend))
 - **Primary Specifications:**
   - Product Specs & PRD: [`docs/PRD.md`](docs/PRD.md)
   - Architecture & Blueprint: [`docs/architecture.md`](docs/architecture.md)

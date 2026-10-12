@@ -105,7 +105,7 @@ Every task follows a strict 4-step atomic verification cycle:
 ---
 
 ### Phase 4 — Presentation & Web Application (Streamlit)
-- [x] **4.1 Production API Gateway Status Portal** → verified: app/app.py streamlined
+- [x] **4.1 Production Google Stitch UI Integration** → verified: app/stitch_screen.html + app/app.py live inference (Exit Code 0)
 - [x] **4.2 Heatmap Overlay & Confidence Visualizer** → verify: `python3 tests/smoke_ui_components.py`
 - [x] **4.3 Mandatory Medical Disclaimer Enforcement** → verify: `grep -rn "Disclaimer" app/app.py`
 

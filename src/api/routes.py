@@ -75,14 +75,20 @@ def health_check():
     except Exception:
         onnx_loaded = False
 
+    supabase_ok = False
+    try:
+        hist_service = get_history_service()
+        supabase_ok = hist_service.client.check_connection()
+    except Exception:
+        supabase_ok = False
+
     return HealthResponse(
         status="healthy" if onnx_loaded else "degraded",
         onnx_model_loaded=onnx_loaded,
         groq_configured=bool(os.environ.get("GROQ_API_KEY")),
-        supabase_configured=bool(os.environ.get("SUPABASE_URL") and os.environ.get("SUPABASE_KEY")),
+        supabase_configured=supabase_ok,
         timestamp=datetime.now(timezone.utc).isoformat(),
     )
-
 
 @router.post("/predict", response_model=PredictionResponse, tags=["Inference"])
 @router.post("/api/v1/predict", response_model=PredictionResponse, tags=["Inference"])

@@ -48,3 +48,34 @@ WITH CHECK (bucket_id = 'scans');
 CREATE POLICY "Allow public view from scans bucket"
 ON storage.objects FOR SELECT
 USING (bucket_id = 'scans');
+
+-- 5. Longitudinal Lesion Visits Table
+CREATE TABLE IF NOT EXISTS public.lesion_visits (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    visit_id TEXT UNIQUE NOT NULL,
+    lesion_id TEXT NOT NULL,
+    lesion_name TEXT NOT NULL,
+    date TIMESTAMPTZ DEFAULT TIMEZONE('utc', NOW()),
+    predicted_class TEXT NOT NULL,
+    class_name TEXT NOT NULL,
+    confidence FLOAT NOT NULL,
+    risk_level TEXT NOT NULL,
+    risk_label TEXT NOT NULL,
+    image_thumb TEXT,
+    llm_explanation TEXT,
+    notes TEXT,
+    created_at TIMESTAMPTZ DEFAULT TIMEZONE('utc', NOW())
+);
+
+CREATE INDEX IF NOT EXISTS idx_lesion_visits_lesion_id ON public.lesion_visits (lesion_id);
+CREATE INDEX IF NOT EXISTS idx_lesion_visits_date ON public.lesion_visits (date DESC);
+
+ALTER TABLE public.lesion_visits ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Allow public read access to lesion_visits" ON public.lesion_visits;
+CREATE POLICY "Allow public read access to lesion_visits" 
+ON public.lesion_visits FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Allow public insert to lesion_visits" ON public.lesion_visits;
+CREATE POLICY "Allow public insert to lesion_visits" 
+ON public.lesion_visits FOR INSERT WITH CHECK (true);

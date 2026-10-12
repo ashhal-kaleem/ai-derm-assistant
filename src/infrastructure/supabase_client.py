@@ -93,3 +93,40 @@ class SupabaseCloudClient:
             except Exception as e:
                 logger.error(f"Database fetch error: {e}")
         return self._memory_store[:limit]
+
+    def check_connection(self) -> bool:
+        """Verify active database connectivity by probing the scans table."""
+        if self.client is not None:
+            try:
+                res = self.client.table("scans").select("id").limit(1).execute()
+                return res is not None
+            except Exception:
+                return False
+        return False
+
+    def insert_lesion_visit(self, visit_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Persist a longitudinal lesion visit record to Supabase."""
+        if self.client is not None:
+            try:
+                response = self.client.table("lesion_visits").insert(visit_data).execute()
+                if response.data and len(response.data) > 0:
+                    return response.data[0]
+            except Exception as e:
+                logger.error(f"Database insert lesion_visit error: {e}")
+        return visit_data
+
+    def fetch_lesion_timeline(self, lesion_id: str) -> List[Dict[str, Any]]:
+        """Fetch all historical visits for a specific lesion ordered by date desc."""
+        if self.client is not None:
+            try:
+                response = (
+                    self.client.table("lesion_visits")
+                    .select("*")
+                    .eq("lesion_id", lesion_id)
+                    .order("date", desc=True)
+                    .execute()
+                )
+                return response.data or []
+            except Exception as e:
+                logger.error(f"Database fetch lesion_timeline error: {e}")
+        return []

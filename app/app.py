@@ -90,52 +90,6 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# Service Header
-st.markdown('<div class="main-header">🔬 DermAssist AI — Clinical Inference Gateway</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-header">Production Headless REST API Gateway & Mobile Inference Service (v2.0.0)</div>', unsafe_allow_html=True)
-
-# Status Cards Row
-col1, col2, col3 = st.columns(3)
-with col1:
-    st.metric(label="Inference Runtime", value="EfficientNet-B4", delta="ONNX CPU Loaded")
-with col2:
-    st.metric(label="Confidence Calibration", value="Temperature Scaled", delta="T* = 1.25")
-with col3:
-    st.metric(label="Clinical Advisory", value="Groq LPU Llama-3.3", delta="Operational")
-
-st.divider()
-
-# Registered Endpoints Directory
-st.subheader("📡 Registered Production Endpoints")
-endpoints_data = [
-    {"Method": "POST", "Path": "/predict", "Description": "Dual-Output Inference + Grad-CAM Saliency Extraction (380x380)", "Status": "🟢 Operational"},
-    {"Method": "POST", "Path": "/report", "Description": "Doctor-Ready Vector PDF Report Generation (ReportLab)", "Status": "🟢 Operational"},
-    {"Method": "POST", "Path": "/history", "Description": "Longitudinal Lesion Visit Tracking & Baseline Record", "Status": "🟢 Operational"},
-    {"Method": "GET", "Path": "/history/{id}", "Description": "Longitudinal Visit Timeline Retrieval", "Status": "🟢 Operational"},
-    {"Method": "GET", "Path": "/clinics", "Description": "Dermatologist Geolocation Lookup (OpenStreetMap / Overpass)", "Status": "🟢 Operational"},
-    {"Method": "GET", "Path": "/health", "Description": "Container Liveness & Readiness Probe (Model & Service Status)", "Status": "🟢 Operational"},
-    {"Method": "GET", "Path": "/", "Description": "Canonical API Service Discovery Manifest (JSON)", "Status": "🟢 Operational"},
-]
-st.dataframe(pd.DataFrame(endpoints_data), use_container_width=True, hide_index=True)
-
-st.divider()
-
-# Quick Client Usage & Documentation
-col_docs, col_curl = st.columns([1, 1])
-with col_docs:
-    st.subheader("📖 Interactive Documentation")
-    st.markdown("Interactive OpenAPI / Swagger UI documentation is available for live testing and schema inspection:")
-    st.markdown("🔗 **Swagger UI**: `/docs`")
-    st.markdown("🔗 **ReDoc**: `/redoc`")
-    st.markdown("🔗 **OpenAPI Schema**: `/openapi.json`")
-
-with col_curl:
-    st.subheader("💻 Quick Client Integration")
-    st.code('''# Analyze skin lesion image via cURL
-curl -X POST "https://<api-host>/predict" \\
-     -F "file=@lesion_photo.jpg"
-''', language="bash")
-
 # Mandatory Medical Disclaimer Footer (Law #4)
 st.divider()
 st.markdown(f'<div class="disclaimer-box">{MANDATORY_MEDICAL_DISCLAIMER}</div>', unsafe_allow_html=True)

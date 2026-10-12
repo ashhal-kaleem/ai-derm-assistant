@@ -38,7 +38,13 @@ Canonical project nouns to eliminate semantic drift, schema naming bugs, and LLM
 ---
 
 ## ⚡ 3. Session Handover & State Rehydration (Pick Up Here)
-- **Session Timestamp:** 2026-10-12 14:22
+- **Session Timestamp:** 2026-10-12 14:41
+- **Verified Accomplishments (What Works):**
+  - Supabase Cloud Project (dhdwcpatbsipfheuwolo) restored and verified ACTIVE_HEALTHY.
+  - Created public.lesion_visits table with RLS policies in remote PostgreSQL.
+  - Connected HistoryService to persist both scans and longitudinal lesion visits directly to cloud database.
+  - Updated /health endpoint with active database ping probe (real liveness).
+  - All 19 pytest tests and 13 live local server end-to-end HTTP tests passing 100% (exit 0).
 - **Verified Accomplishments (What Works):**
   - Real-time Geolocation Service configured via OpenStreetMap Overpass API - **Session Timestamp:** 2026-10-02 17:35 exact Haversine distance formula.
   - Resilient fallback implemented for high-load / rate-limiting conditions without 500 errors.

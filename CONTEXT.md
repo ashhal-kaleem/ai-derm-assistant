@@ -112,6 +112,7 @@ Every task follows a strict 4-step atomic verification cycle:
 ---
 
 ### Phase 5 — Quality Review, Testing & Release
+- [x] **5.5 Cloud Deployment Blueprint (Render Free Tier & Docker)** → verified: `render.yaml` & `Dockerfile` pushed to main (Exit Code 0)
 - [x] **5.1 Zero Patient Leakage Verification Gate** → verify: `pytest tests/test_dataset_leakage.py`
 - [x] **5.2 Calibration ECE Target Gate (< 5%)** → verify: `pytest tests/test_calibration.py`
 - [x] **5.3 Real Live Backend Verification Gate** → verified: `scratch/test_live_backend.py` with real lesion image (Exit Code 0)

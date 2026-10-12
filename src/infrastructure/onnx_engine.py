@@ -41,6 +41,7 @@ class ONNXInferenceEngine:
     def _initialize_session(self, model_path: Optional[str], hf_repo_id: Optional[str]) -> None:
         """Initialize ONNX session from file or stream from HuggingFace Hub."""
         resolved_path = model_path or "checkpoints/efficientnet_b4_ham10000.onnx"
+        self.model_path = resolved_path
 
         # If HF repo is configured and no local file exists, download on boot
         if not resolved_path and hf_repo_id and hf_hub_download:

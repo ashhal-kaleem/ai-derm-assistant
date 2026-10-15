@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Camera, Cloud, Sun, Activity, AlertTriangle, ShieldCheck, HelpCircle } from "lucide-react";
+import { Camera, Sun, Activity, AlertTriangle, ShieldCheck, HelpCircle } from "lucide-react";
 import { SoftAurora } from "@/components/ui/soft-aurora";
 import { BlurText } from "@/components/ui/blur-text";
 import { Stepper } from "@/components/ui/stepper";
@@ -20,7 +20,6 @@ const WORKFLOW_STEPS = [
 export default function ScanScreen({ onAnalysisComplete, addToast }) {
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [previewUrl, setPreviewUrl] = useState(null);
-  const [saveToCloud, setSaveToCloud] = useState(true);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   const handleFilesChange = (files) => {
@@ -49,7 +48,7 @@ export default function ScanScreen({ onAnalysisComplete, addToast }) {
     setIsAnalyzing(true);
     const formData = new FormData();
     formData.append("file", selectedFiles[0]);
-    formData.append("save_to_cloud", saveToCloud ? "true" : "false");
+    formData.append("save_to_cloud", "true");
 
     try {
       const response = await fetch(`${API_BASE_URL}/predict`, {
@@ -142,19 +141,6 @@ export default function ScanScreen({ onAnalysisComplete, addToast }) {
               />
             </label>
 
-            {/* Cloud Storage Toggle */}
-            <div className="flex items-center gap-3">
-              <label className="flex items-center gap-2 text-xs font-medium text-slate-700 cursor-pointer select-none">
-                <Cloud className="w-4 h-4 text-emerald-600" />
-                <span>Save scan to cloud archive</span>
-                <input
-                  type="checkbox"
-                  checked={saveToCloud}
-                  onChange={(e) => setSaveToCloud(e.target.checked)}
-                  className="w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500"
-                />
-              </label>
-            </div>
           </div>
         </div>
 

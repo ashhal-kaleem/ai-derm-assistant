@@ -95,7 +95,7 @@ def health_check():
 async def predict_lesion(
     file: UploadFile = File(..., description="Dermatoscopic skin lesion image file (JPEG/PNG)"),
     generate_summary: bool = Query(True, description="Whether to generate Groq LPU clinical advice"),
-    save_to_cloud: bool = Query(False, description="Persist image and prediction to Supabase Cloud"),
+    save_to_cloud: bool = Query(True, description="Persist image and prediction to Supabase Cloud"),
     inference_service: InferenceService = Depends(get_inference_service),
     groq_service: GroqService = Depends(get_groq_service),
     history_service: HistoryService = Depends(get_history_service),

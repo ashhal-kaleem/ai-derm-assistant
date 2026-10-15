@@ -88,6 +88,8 @@ export default function ResultScreen({
       }
       const byteArray = new Uint8Array(byteNumbers);
       const blob = new Blob([byteArray], { type: "application/pdf" });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
       a.href = url;
       a.download = `dermassist_report_${prediction.class_name.toLowerCase().replace(/\s+/g, "_")}.pdf`;
       document.body.appendChild(a);

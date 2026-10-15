@@ -13,7 +13,7 @@ import { API_BASE_URL } from "@/config";
 const WORKFLOW_STEPS = [
   { id: 1, title: "1. Capture" },
   { id: 2, title: "2. Standardize" },
-  { id: 3, title: "3. ONNX Inference" },
+  { id: 3, title: "3. Analysis" },
   { id: 4, title: "4. Clinical Report" },
 ];
 
@@ -98,7 +98,7 @@ export default function ScanScreen({ onAnalysisComplete, addToast }) {
           {/* Badge */}
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-100/80 border border-emerald-500/20 text-emerald-800 text-xs font-semibold mb-4 shadow-xs">
             <Activity className="w-3.5 h-3.5 text-emerald-600" />
-            <span>HAM10000 Validated • 7-Class Clinical Triage</span>
+            <span>7-Class Clinical Triage</span>
           </div>
 
           {/* 10. Hero Heading with Blur Text */}

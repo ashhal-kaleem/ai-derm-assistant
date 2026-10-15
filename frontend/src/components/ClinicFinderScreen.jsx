@@ -52,7 +52,7 @@ export const ClinicFinderScreen = ({ onStartScan, addToast }) => {
           addToast({
             type: "success",
             title: "Location Acquired",
-            message: `Coordinates locked: ${loc.lat.toFixed(2)}, ${loc.lon.toFixed(2)}`,
+            message: `Nearby clinics located.`,
           });
         }
       },

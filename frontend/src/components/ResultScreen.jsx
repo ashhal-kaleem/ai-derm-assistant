@@ -121,9 +121,6 @@ export default function ResultScreen({
       {/* Top Controls Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-200 pb-5">
         <div>
-          <span className="text-[11px] font-mono font-semibold uppercase tracking-wider text-emerald-700 bg-emerald-100/60 px-2.5 py-0.5 rounded-full">
-            Inference Complete
-          </span>
           <h2 className="text-2xl sm:text-3xl font-extrabold text-[#064E3B] font-heading mt-1">
             Diagnostic & Triage Report
           </h2>
@@ -160,10 +157,6 @@ export default function ResultScreen({
             className="w-full"
           />
 
-          <div className="flex items-center justify-between text-[11px] font-mono text-slate-400 px-2">
-            <span>Left: Original Dermoscopic</span>
-            <span>Right: Grad-CAM Saliency</span>
-          </div>
         </div>
 
         {/* Right Column: Diagnostic Cards & Badges (6 cols) */}
@@ -187,7 +180,7 @@ export default function ResultScreen({
             {/* Confidence Progress & CountUp */}
             <div className="space-y-2 mb-5">
               <div className="flex items-center justify-between text-xs font-medium">
-                <span className="text-slate-600">Calibrated Confidence ($T^*$):</span>
+                <span className="text-slate-600">Calibrated Confidence:</span>
                 <span className="font-mono text-base font-bold text-slate-900">
                   <CountUp value={confidencePercent} />
                 </span>
@@ -208,9 +201,6 @@ export default function ResultScreen({
             <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-100">
               <span className={`text-[11px] font-mono px-2.5 py-1 rounded-full border font-semibold ${uncertaintyColor}`}>
                 {uncertaintyLabel}
-              </span>
-              <span className="text-[11px] font-mono px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
-                ONNX CPU • Sub-250ms
               </span>
             </div>
           </SpotlightCard>

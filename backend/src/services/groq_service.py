@@ -34,27 +34,26 @@ class GroqService:
             return self._build_static_summary(prediction, card)
 
         system_instruction = (
-            "You are DermAssist AI, an educational clinical communication assistant. "
-            "You provide clear, empathetic, and medically grounded explanations for skin lesion "
-            "classification results. You never diagnose definitively, and you always advocate for "
-            "in-person evaluation by a board-certified dermatologist."
+            "You are a board-certified dermatologist writing a concise clinical chart note for a patient. "
+            "Write in a natural, authoritative, physician-grade clinical voice. "
+            "RULES: "
+            "1. Strictly 2 to 3 sentences total (under 75 words). "
+            "2. NEVER use markdown tables, bullet points, headers, asterisks, or pipe characters. "
+            "3. NEVER use AI meta-intros, conversational preamble, or disclaimers (e.g. no 'As an AI', 'What the model saw'). "
+            "4. Cover: 1) What the lesion is in plain terms, 2) Why its features indicate its risk tier, and 3) Recommended clinical step."
         )
 
         prompt = (
-            f"Please generate a concise, structured educational report for this skin lesion analysis:\n\n"
-            f"- Primary Finding: {prediction.top_name} ({prediction.top_class})\n"
+            f"Patient Lesion Assessment:\n"
+            f"- Clinical Classification: {prediction.top_name} ({prediction.top_class})\n"
             f"- Risk Tier: {prediction.risk_level.value}\n"
-            f"- Calibrated Model Confidence: {prediction.calibrated_confidence * 100:.1f}%\n"
-            f"- Uncertainty Index: {prediction.uncertainty_score:.2f} (0=certain, 1=uncertain)\n"
-            f"- Clinical Ground Truth Context: {card['description']}\n"
-            f"- Urgency Guidance: {card['urgency']}\n\n"
-            f"Provide a 3-part structured breakdown:\n"
-            f"1. **Clinical Understanding**: What this classification means in accessible patient language.\n"
-            f"2. **Visual/Dermoscopic Indicators**: Why the model and clinicians look closely at this lesion type.\n"
-            f"3. **Recommended Next Steps**: Clear guidance on clinical consultation timeframe."
+            f"- Calibrated Confidence: {prediction.calibrated_confidence * 100:.1f}%\n"
+            f"- Clinical Ground Truth: {card['description']}\n"
+            f"- Recommended Action: {card['urgency']}\n\n"
+            f"Write the concise 2-to-3 sentence clinical note."
         )
 
-        fallback_models = ["openai/gpt-oss-120b", "qwen/qwen3.8-27b", "llama-3.3-70b-versatile"]
+        fallback_models = ["qwen/qwen3.8-27b", "openai/gpt-oss-120b"]
         for model_name in fallback_models:
             try:
                 chat_completion = self.client.chat.completions.create(
@@ -63,8 +62,8 @@ class GroqService:
                         {"role": "user", "content": prompt}
                     ],
                     model=model_name,
-                    temperature=0.2,
-                    max_tokens=600
+                    temperature=0.1,
+                    max_tokens=100
                 )
                 content = chat_completion.choices[0].message.content
                 if content:
@@ -74,17 +73,9 @@ class GroqService:
         return self._build_static_summary(prediction, card)
 
     def _build_static_summary(self, prediction: PredictionResult, card: dict) -> str:
-        """Structured fallback narrative built from static clinical knowledge cards."""
+        """Concise physician-grade fallback narrative built from static clinical knowledge cards."""
         return (
-            f"### 📋 Clinical Summary: {card['common_name']}\n\n"
-            f"**Risk Level:** `{prediction.risk_level.value}` | "
-            f"**Calibrated Confidence:** `{prediction.calibrated_confidence * 100:.1f}%`\n\n"
-            f"#### 1. Clinical Understanding\n"
-            f"{card['description']}\n\n"
-            f"#### 2. Visual & Dermoscopic Features\n"
-            f"- **Typical Appearance**: {card['typical_appearance']}\n"
-            f"- **ABCDE Dermatological Relevance**: {card['abcde_relevance']}\n\n"
-            f"#### 3. Recommended Next Steps\n"
-            f"{card['urgency']}\n\n"
-            f"*(Generated from verified clinical reference card)*"
+            f"Clinical impression is consistent with {card['common_name']}. Classification triage: {prediction.risk_level.value} with {prediction.calibrated_confidence * 100:.1f}% confidence. "
+            f"{card['description'].split('.')[0]}. "
+            f"{card['urgency']}"
         )

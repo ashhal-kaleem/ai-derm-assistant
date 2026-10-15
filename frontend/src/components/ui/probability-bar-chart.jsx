@@ -12,7 +12,13 @@ const CLASS_CONFIG = {
 };
 
 export const ProbabilityBarChart = ({ probabilities = {}, className }) => {
-  const sorted = Object.entries(probabilities).sort((a, b) => b[1] - a[1]);
+  const normalized = Object.entries(probabilities).map(([key, val]) => {
+    const isObj = typeof val === "object" && val !== null;
+    const name = isObj ? (val.name || key) : key;
+    const prob = isObj ? Number(val.probability ?? 0) : Number(val ?? 0);
+    return { key, name, prob };
+  });
+  const sorted = normalized.sort((a, b) => b.prob - a.prob);
 
   return (
     <div className={cn("w-full bg-white rounded-3xl p-6 border border-emerald-500/15 shadow-sm space-y-4", className)}>
@@ -21,15 +27,12 @@ export const ProbabilityBarChart = ({ probabilities = {}, className }) => {
           <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider font-mono">
             7-Class Probability Distribution
           </h4>
-          <p className="text-[11px] text-slate-500">Calibrated Softmax ($T^*$ Scaled)</p>
+          <p className="text-[11px] text-slate-500">Calibrated Likelihood</p>
         </div>
-        <span className="text-[10px] font-mono bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-semibold">
-          HAM10000
-        </span>
       </div>
 
       <div className="space-y-3 pt-1">
-        {sorted.map(([name, prob]) => {
+        {sorted.map(({ name, prob }) => {
           const cfg = CLASS_CONFIG[name] || {
             color: "bg-emerald-500",
             text: "text-emerald-700",

@@ -67,17 +67,27 @@ export default function ResultScreen({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          diagnosis: prediction.class_name,
-          confidence: prediction.confidence,
-          risk_level: prediction.risk_level,
-          clinical_notes: aiExplanation
+          prediction: {
+            predicted_class: prediction.predicted_class || prediction.top_class || "nv",
+            class_name: prediction.class_name || prediction.top_name || "Melanocytic Nevi",
+            confidence: prediction.confidence || prediction.calibrated_confidence || 0.9,
+            risk_level: prediction.risk_level || "green",
+            risk_label: prediction.risk_label || "Benign",
+            llm_explanation: aiExplanation
+          },
+          history: []
         })
       });
 
       if (!res.ok) throw new Error("PDF report generation failed.");
-      const blob = await res.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
+      const data = await res.json();
+      const byteCharacters = atob(data.pdf_b64);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      const blob = new Blob([byteArray], { type: "application/pdf" });
       a.href = url;
       a.download = `dermassist_report_${prediction.class_name.toLowerCase().replace(/\s+/g, "_")}.pdf`;
       document.body.appendChild(a);

@@ -1,8 +1,5 @@
 export const API_BASE_URL =
-  typeof window !== 'undefined' &&
-  (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-    ? 'http://localhost:8000'
-    : 'https://ai-derm-assistant-api.onrender.com';
+  import.meta.env.VITE_API_BASE_URL || 'https://ai-derm-assistant-api.onrender.com';
 
 export const CLASS_METADATA = {
   mel: { name: 'Melanoma', risk: 'urgent', riskLabel: 'High Risk' },

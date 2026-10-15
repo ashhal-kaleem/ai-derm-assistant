@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Camera, Sun, Activity, AlertTriangle, ShieldCheck, HelpCircle } from "lucide-react";
 import { SoftAurora } from "@/components/ui/soft-aurora";
-import { BlurText } from "@/components/ui/blur-text";
+import TechText from "@/components/ui/TechText";
 import { Stepper } from "@/components/ui/stepper";
 import { FileUpload } from "@/components/ui/file-upload";
 import { Button } from "@/components/ui/stateful-button";
@@ -101,11 +101,20 @@ export default function ScanScreen({ onAnalysisComplete, addToast }) {
             <span>7-Class Clinical Triage</span>
           </div>
 
-          {/* 10. Hero Heading with Blur Text */}
-          <BlurText
-            text="Clinical Triage & Skin Lesion Analysis"
-            className="text-3xl sm:text-5xl font-extrabold tracking-tight text-[#064E3B] font-heading mb-4 text-center"
-          />
+          {/* Hero Heading with TechText Component */}
+          <div className="w-full max-w-4xl h-24 sm:h-32 relative mx-auto mb-4">
+            <TechText
+              text="Clinical Triage & Skin Lesion Analysis"
+              fontWeight={700}
+              fontSize={48}
+              color="#064E3B"
+              accentColor="#059669"
+              reveal="letter"
+              dashLength={4}
+              dashGap={2}
+              specks={12}
+            />
+          </div>
 
           <p className="text-slate-600 text-sm sm:text-base max-w-xl mx-auto mb-6 leading-relaxed">
             Upload or photograph a skin lesion for preliminary screening and visual heatmap analysis.

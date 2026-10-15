@@ -78,39 +78,8 @@ export const ClinicFinderScreen = ({ onStartScan, addToast }) => {
         throw new Error("Unable to retrieve nearby clinics.");
       }
     } catch {
-      // Offline fallback dummy dermatologists
-      setClinics([
-        {
-          id: 1,
-          name: "Apollo Dermatology Center",
-          address: "Sarita Vihar, Mathura Road, New Delhi",
-          distance_km: 3.2,
-          phone: "+91 11 2692 5858",
-          rating: 4.8,
-          lat: 28.5355,
-          lon: 77.2882,
-        },
-        {
-          id: 2,
-          name: "Max Super Speciality Skin Clinic",
-          address: "1, 2 Press Enclave Marg, Saket",
-          distance_km: 5.7,
-          phone: "+91 11 2651 5050",
-          rating: 4.9,
-          lat: 28.5273,
-          lon: 77.2145,
-        },
-        {
-          id: 3,
-          name: "Fortis Skin & Laser Institute",
-          address: "Sector B, Pocket 1, Aruna Asaf Ali Marg, Vasant Kunj",
-          distance_km: 8.4,
-          phone: "+91 11 4277 6222",
-          rating: 4.7,
-          lat: 28.5284,
-          lon: 77.1611,
-        },
-      ]);
+      setErrorMsg("Unable to retrieve nearby clinics. Please verify internet connection or try a larger search radius.");
+      setClinics([]);
     } finally {
       setIsLoading(false);
     }

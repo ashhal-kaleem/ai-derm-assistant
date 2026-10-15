@@ -39,10 +39,14 @@ Canonical project nouns to eliminate semantic drift, schema naming bugs, and LLM
 
 ## ⚡ 3. Session Handover & State Rehydration (Pick Up Here)
 - **Session Timestamp:** 2026-10-12 14:41
-- **Verified Accomplishments (What Works):**
+- **Session Timestamp:** 2026-10-15 13:05
   - Supabase Cloud Project (dhdwcpatbsipfheuwolo) restored and verified ACTIVE_HEALTHY.
   - Created public.lesion_visits table with RLS policies in remote PostgreSQL.
   - Connected HistoryService to persist both scans and longitudinal lesion visits directly to cloud database.
+  - Upgraded GeolocationService to live OpenStreetMap Nominatim search (genuine clinics, exact Haversine distance, zero dummy clinics).
+  - Eliminated hardcoded Delhi fallback clinics from ClinicFinderScreen.jsx offline catch block.
+  - Full backend test suite passing 100% (19/19 pytest tests, exit 0).
+  - Integrated React Bits <TechText /> component into ScanScreen.jsx heading with interactive pointer physics, specks, and responsive scaling.
   - Updated /health endpoint with active database ping probe (real liveness).
   - All 19 pytest tests and 13 live local server end-to-end HTTP tests passing 100% (exit 0).
 - **Verified Accomplishments (What Works):**

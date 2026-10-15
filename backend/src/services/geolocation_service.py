@@ -1,4 +1,4 @@
-"""Geolocation Service querying OpenStreetMap Overpass API with resilient fallback."""
+"""Geolocation Service querying OpenStreetMap Nominatim API with resilient fallback."""
 
 import json
 import logging
@@ -24,9 +24,9 @@ def calculate_haversine_distance(lat1: float, lon1: float, lat2: float, lon2: fl
 
 
 class GeolocationService:
-    """Fetches verified dermatology clinics and medical centers via OpenStreetMap Overpass."""
+    """Fetches verified dermatology clinics and medical centers via OpenStreetMap Nominatim."""
 
-    OVERPASS_URL = "https://overpass-api.de/api/interpreter"
+    NOMINATIM_URL = "https://nominatim.openstreetmap.org/search"
 
     def search_clinics(
         self,
@@ -35,90 +35,71 @@ class GeolocationService:
         radius_km: float = 5.0
     ) -> List[Dict[str, Any]]:
         """
-        Query real-time OpenStreetMap Overpass API for dermatologists, clinics, and hospitals.
-        Falls back seamlessly to verified regional medical centers on timeout or rate limit.
+        Query real-time OpenStreetMap Nominatim API for dermatologists, skin clinics, and hospitals.
+        Uses geographic bounding box calculated from user coordinates and search radius.
         """
-        radius_m = int(max(1.0, radius_km) * 1000)
+        safe_radius = max(1.0, float(radius_km))
+        d_lat = safe_radius / 111.0
+        cos_lat = math.cos(math.radians(lat))
+        d_lon = safe_radius / (111.0 * cos_lat) if abs(cos_lat) > 1e-4 else d_lat
+
+        min_lat = round(lat - d_lat, 4)
+        max_lat = round(lat + d_lat, 4)
+        min_lon = round(lon - d_lon, 4)
+        max_lon = round(lon + d_lon, 4)
+        viewbox_str = f"{min_lon},{max_lat},{max_lon},{min_lat}"
+
         clinics: List[Dict[str, Any]] = []
+        seen_coords = set()
 
-        # 1. Attempt live OpenStreetMap Overpass QL query
-        try:
-            query = f"""[out:json][timeout:3];
-            (
-              node["healthcare:speciality"="dermatology"](around:{radius_m},{lat},{lon});
-              node["healthcare"="dermatologist"](around:{radius_m},{lat},{lon});
-              node["amenity"="clinic"](around:{radius_m},{lat},{lon});
-              node["amenity"="doctors"](around:{radius_m},{lat},{lon});
-              node["amenity"="hospital"](around:{radius_m},{lat},{lon});
-            );
-            out center 8;"""
+        search_terms = ["dermatology", "skin clinic", "dermatologist", "clinic", "hospital"]
+        headers = {
+            "User-Agent": "DermAssistAI-Production/2.0 (Clinical Triage Research; contact@dermassist.ai)",
+            "Accept": "application/json"
+        }
 
-            post_data = urllib.parse.urlencode({"data": query}).encode("utf-8")
-            req = urllib.request.Request(self.OVERPASS_URL, data=post_data,
-                 
-                headers={"User-Agent": "DermAssistAI-Production/2.0 (Clinical Triage Research)", "Accept": "application/json"}
-            )
-
-            with urllib.request.urlopen(req, timeout=5.0) as response:
-                if response.status == 200:
-                    data = json.loads(response.read().decode("utf-8"))
-                    elements = data.get("elements", [])
-                    for el in elements:
-                        tags = el.get("tags", {})
-                        name = (
-                            tags.get("name")
-                            or tags.get("healthcare:speciality")
-                            or tags.get("amenity")
-                            or "Dermatology / Skin Care Center"
-                        )
-                        c_lat = float(el.get("lat") or el.get("center", {}).get("lat", lat))
-                        c_lon = float(el.get("lon") or el.get("center", {}).get("lon", lon))
-                        dist_km = calculate_haversine_distance(lat, lon, c_lat, c_lon)
-
-                        street = tags.get("addr:street") or tags.get("addr:city") or "Medical District"
-                        clinics.append({
-                            "name": name,
-                            "lat": c_lat,
-                            "lon": c_lon,
-                            "distance_km": dist_km,
-                            "address": street,
-                            "directions_url": f"https://www.google.com/maps/dir/?api=1&destination={c_lat},{c_lon}"
-                        })
-        except Exception as exc:
-            logger.warning(f"Live OpenStreetMap query failed ({exc}); activating resilient fallback.")
-
-        # 2. Resilient Fallback: Verified medical centers with exact Haversine distance
-        if not clinics:
-            verified_centers = [
-                {
-                    "name": "Regional Dermatology & Cutaneous Care Center",
-                    "lat": round(lat + 0.012, 4),
-                    "lon": round(lon + 0.008, 4),
-                    "address": "Specialized Cutaneous Care Wing"
-                },
-                {
-                    "name": "University Teaching Hospital — Dermatology OPD",
-                    "lat": round(lat - 0.021, 4),
-                    "lon": round(lon + 0.015, 4),
-                    "address": "Tertiary Healthcare Complex, OPD Block B"
-                },
-                {
-                    "name": "Advanced Cutaneous Oncology & Biopsy Center",
-                    "lat": round(lat + 0.035, 4),
-                    "lon": round(lon - 0.018, 4),
-                    "address": "Medical District, Oncology Annex"
-                }
-            ]
-            for c in verified_centers:
-                dist = calculate_haversine_distance(lat, lon, c["lat"], c["lon"])
-                clinics.append({
-                    "name": c["name"],
-                    "lat": c["lat"],
-                    "lon": c["lon"],
-                    "distance_km": dist,
-                    "address": c["address"],
-                    "directions_url": f"https://www.google.com/maps/dir/?api=1&destination={c['lat']},{c['lon']}"
+        for term in search_terms:
+            if len(clinics) >= 8:
+                break
+            try:
+                params = urllib.parse.urlencode({
+                    "format": "json",
+                    "addressdetails": "1",
+                    "q": term,
+                    "viewbox": viewbox_str,
+                    "bounded": "1",
+                    "limit": "6"
                 })
+                req = urllib.request.Request(f"{self.NOMINATIM_URL}?{params}", headers=headers)
+                with urllib.request.urlopen(req, timeout=4.0) as response:
+                    if response.status == 200:
+                        items = json.loads(response.read().decode("utf-8"))
+                        for item in items:
+                            c_lat = float(item.get("lat", 0.0))
+                            c_lon = float(item.get("lon", 0.0))
+                            coord_key = (round(c_lat, 3), round(c_lon, 3))
+                            if coord_key in seen_coords:
+                                continue
+                            seen_coords.add(coord_key)
+
+                            name = item.get("name") or item.get("display_name", "").split(",")[0].strip() or "Specialized Medical Center"
+                            dist_km = calculate_haversine_distance(lat, lon, c_lat, c_lon)
+
+                            addr_dict = item.get("address", {})
+                            parts = [addr_dict.get(k) for k in ["road", "suburb", "city_district", "city"] if addr_dict.get(k)]
+                            address_str = ", ".join(parts) if parts else item.get("display_name", "Medical District")
+
+                            clinics.append({
+                                "name": name,
+                                "lat": c_lat,
+                                "lon": c_lon,
+                                "distance_km": dist_km,
+                                "address": address_str,
+                                "directions_url": f"https://www.google.com/maps/dir/?api=1&destination={c_lat},{c_lon}"
+                            })
+            except Exception as exc:
+                logger.warning(f"Nominatim query for term '{term}' failed: {exc}")
+                continue
 
         # Sort ascending by distance
         clinics.sort(key=lambda x: x["distance_km"])

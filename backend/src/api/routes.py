@@ -45,7 +45,7 @@ from src.services.report_service import ReportService
 
 router = APIRouter()
 
-@router.get("/", tags=["Discovery"])
+@router.api_route("/", methods=["GET", "HEAD"], tags=["Discovery"])
 def api_root():
     """Canonical API Service Discovery Manifest for headless clients and developers."""
     return {
@@ -65,7 +65,7 @@ def api_root():
     }
 
 
-@router.get("/health", response_model=HealthResponse, tags=["Monitoring"])
+@router.api_route("/health", methods=["GET", "HEAD"], response_model=HealthResponse, tags=["Monitoring"])
 def health_check():
     """Liveness & Readiness probe for container orchestrators and monitoring."""
     onnx_loaded = False

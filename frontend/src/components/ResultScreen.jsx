@@ -73,7 +73,9 @@ export default function ResultScreen({
             confidence: prediction.confidence || prediction.calibrated_confidence || 0.9,
             risk_level: prediction.risk_level || "green",
             risk_label: prediction.risk_label || "Benign",
-            llm_explanation: aiExplanation
+            llm_explanation: aiExplanation,
+            heatmap_b64: prediction.heatmap_b64,
+            image_b64: originalImage
           },
           history: []
         })

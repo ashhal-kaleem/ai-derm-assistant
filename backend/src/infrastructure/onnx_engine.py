@@ -39,16 +39,25 @@ class ONNXInferenceEngine:
         self._initialize_session(model_path, hf_repo_id)
 
     def _initialize_session(self, model_path: Optional[str], hf_repo_id: Optional[str]) -> None:
-        """Initialize ONNX session from file or stream from HuggingFace Hub."""
-        resolved_path = model_path or "checkpoints/efficientnet_b4_ham10000.onnx"
-        self.model_path = resolved_path
-        if not os.path.exists(resolved_path):
+        """Initialize ONNX session from local file, alt path, or HuggingFace Hub."""
+        # 1. Try caller-supplied path
+        resolved_path: Optional[str] = model_path if model_path and os.path.exists(model_path) else None
+
+        # 2. Try sibling checkpoints/ path relative to this file
+        if resolved_path is None:
             alt_path = os.path.join(os.path.dirname(__file__), "..", "..", "checkpoints", "efficientnet_b4_ham10000.onnx")
+            alt_path = os.path.normpath(alt_path)
             if os.path.exists(alt_path):
                 resolved_path = alt_path
 
-        # If HF repo is configured and no local file exists, download on boot
-        if not resolved_path and hf_repo_id and hf_hub_download:
+        # 3. Fall back to default relative path (works when CWD is backend/)
+        if resolved_path is None:
+            default_path = "checkpoints/efficientnet_b4_ham10000.onnx"
+            if os.path.exists(default_path):
+                resolved_path = default_path
+
+        # 4. Stream from HuggingFace Hub as last resort
+        if resolved_path is None and hf_repo_id and hf_hub_download is not None:
             try:
                 resolved_path = hf_hub_download(
                     repo_id=hf_repo_id,
@@ -58,6 +67,7 @@ class ONNXInferenceEngine:
                 resolved_path = None
 
         if resolved_path and os.path.exists(resolved_path) and ort is not None:
+            self.model_path = resolved_path
             sess_options = ort.SessionOptions()
             sess_options.intra_op_num_threads = 2
             sess_options.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
@@ -71,18 +81,42 @@ class ONNXInferenceEngine:
 
     def run_inference(self, image: Image.Image) -> Tuple[np.ndarray, np.ndarray]:
         """Execute forward pass and return (raw_logits, activation_map).
-        
+
         Returns:
             Tuple containing:
                 - raw_logits: Array of shape (7,)
-                - activation_map: 2D saliency array of shape (12, 12) or equivalent
+                - activation_map: 2D occlusion-saliency map of shape (GRID, GRID)
         """
-        tensor = preprocess_image(image)
-        
         if self.session is None:
             raise RuntimeError("Production ONNX session not loaded. Ensure checkpoints/efficientnet_b4_ham10000.onnx exists.")
-        outputs = self.session.run(None, {self.input_name: tensor})
-        logits = outputs[0][0]
-        # Generate feature activation approximation
-        feature_slice = np.mean(outputs[1][0], axis=0) if len(outputs) > 1 else np.mean(np.abs(tensor[0]), axis=0)
-        return logits, feature_slice
+
+        tensor = preprocess_image(image)
+        baseline_outputs = self.session.run(None, {self.input_name: tensor})
+        logits = baseline_outputs[0][0]
+
+        # Softmax of baseline
+        exp_logits = np.exp(logits - np.max(logits))
+        baseline_probs = exp_logits / np.sum(exp_logits)
+        top_class_idx = int(np.argmax(baseline_probs))
+
+        # Occlusion sensitivity: 6x6 grid of non-overlapping patches
+        # Each patch replaced with ImageNet mean; confidence drop = saliency
+        GRID = 6
+        h, w = tensor.shape[2], tensor.shape[3]
+        ph, pw = h // GRID, w // GRID
+        saliency = np.zeros((GRID, GRID), dtype=np.float32)
+
+        for row in range(GRID):
+            for col in range(GRID):
+                occluded = tensor.copy()
+                r0, r1 = row * ph, (row + 1) * ph
+                c0, c1 = col * pw, (col + 1) * pw
+                # Replace patch with ImageNet channel means (already normalized space: mean=0)
+                occluded[0, :, r0:r1, c0:c1] = 0.0
+                occ_out = self.session.run(None, {self.input_name: occluded})
+                occ_exp = np.exp(occ_out[0][0] - np.max(occ_out[0][0]))
+                occ_probs = occ_exp / np.sum(occ_exp)
+                # Saliency = how much confidence dropped when this patch was hidden
+                saliency[row, col] = float(baseline_probs[top_class_idx] - occ_probs[top_class_idx])
+
+        return logits, saliency

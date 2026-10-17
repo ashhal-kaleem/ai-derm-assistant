@@ -25,7 +25,7 @@ class InferenceService:
     def __init__(
         self,
         engine: Optional[ONNXInferenceEngine] = None,
-        temperature: float = 1.25
+        temperature: float = 1.0
     ):
         self.engine = engine or ONNXInferenceEngine()
         self.temperature = max(0.1, float(temperature))

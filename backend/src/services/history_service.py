@@ -1,5 +1,6 @@
 """History Service managing Supabase Cloud scans persistence and media storage."""
 
+import threading
 from typing import Any, Dict, List, Optional
 from src.domain.models import PredictionResult, ScanRecord
 from src.infrastructure.supabase_client import SupabaseCloudClient
@@ -10,6 +11,8 @@ class HistoryService:
 
     def __init__(self, client: Optional[SupabaseCloudClient] = None):
         self.client = client or SupabaseCloudClient()
+        self._lesion_store: Dict[str, Any] = {}
+        self._store_lock = threading.Lock()
 
     def record_scan(
         self,
@@ -36,7 +39,7 @@ class HistoryService:
             bucket="scans",
             content_type="image/jpeg"
         )
-        record.image_url = image_url
+        record.image_url = image_url or ""
 
         # 2. Upload Grad-CAM heatmap if present
         if heatmap_bytes:
@@ -46,7 +49,7 @@ class HistoryService:
                 bucket="scans",
                 content_type="image/png"
             )
-            record.heatmap_url = heatmap_url
+            record.heatmap_url = heatmap_url  # None is fine — nullable column
 
         # 3. Insert structured row into Supabase 'scans' table
         payload: Dict[str, Any] = {
@@ -97,11 +100,14 @@ class HistoryService:
         notes: Optional[str] = None
     ) -> Dict[str, str]:
         """Record a new longitudinal visit for a named lesion."""
+        import hashlib
         import uuid
         from datetime import datetime, timezone
-        
+
         visit_id = str(uuid.uuid4())
-        lesion_id = f"lesion_{abs(hash(lesion_name.lower().strip())) % 1000000}"
+        # Deterministic lesion_id: SHA-256 of normalized name (stable across restarts)
+        normalized = lesion_name.lower().strip()
+        lesion_id = "lesion_" + hashlib.sha256(normalized.encode()).hexdigest()[:12]
         
         visit_row = {
             "visit_id": visit_id,
@@ -118,16 +124,14 @@ class HistoryService:
             "notes": notes
         }
         
-        if not hasattr(self, "_lesion_store"):
-            self._lesion_store = {}
-            
         if lesion_id not in self._lesion_store:
             self._lesion_store[lesion_id] = {
                 "lesion_id": lesion_id,
                 "lesion_name": lesion_name,
                 "visits": []
             }
-        self._lesion_store[lesion_id]["visits"].insert(0, visit_row)
+        with self._store_lock:
+            self._lesion_store[lesion_id]["visits"].insert(0, visit_row)
         self.client.insert_lesion_visit(visit_row)
         return {"visit_id": visit_id, "lesion_id": lesion_id}
 
@@ -137,6 +141,4 @@ class HistoryService:
         if cloud_visits:
             lesion_name = cloud_visits[0].get("lesion_name", "Monitored Lesion")
             return {"lesion_id": lesion_id, "lesion_name": lesion_name, "visits": cloud_visits}
-        if not hasattr(self, "_lesion_store"):
-            self._lesion_store = {}
         return self._lesion_store.get(lesion_id)

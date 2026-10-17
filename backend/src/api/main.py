@@ -8,7 +8,7 @@ from src.core.exceptions import register_exception_handlers
 app = FastAPI(
     title="DermAssist AI — Clinical Inference API",
     description="Production skin lesion diagnostic support, ONNX inference, Grad-CAM saliency heatmaps, and Groq LPU clinical narrative advisory.",
-    version="1.0.0",
+    version="2.0.1",
     docs_url="/docs",
     redoc_url="/redoc",
     lifespan=lifespan,

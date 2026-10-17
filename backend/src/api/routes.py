@@ -1,5 +1,6 @@
 import base64
 import io
+import logging
 import os
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
@@ -32,11 +33,12 @@ from src.domain.models import (
     FeedbackType,
     PredictionResult,
     RiskLevel,
-    ScanRecord,
     categorize_uncertainty,
     map_risk_tier,
     CLASS_NAMES,
 )
+
+logger = logging.getLogger("dermassist.routes")
 from src.services.geolocation_service import GeolocationService
 from src.services.groq_service import GroqService
 from src.services.history_service import HistoryService
@@ -50,7 +52,7 @@ def api_root():
     """Canonical API Service Discovery Manifest for headless clients and developers."""
     return {
         "service": "DermAssist AI — Clinical Inference Engine",
-        "version": "2.0.0",
+        "version": "2.0.2",
         "status": "operational",
         "docs_url": "/docs",
         "endpoints": {
@@ -151,21 +153,13 @@ async def predict_lesion(
     # 4. Optional cloud persistence
     if save_to_cloud:
         try:
-            record = ScanRecord(
-                predicted_class=prediction.top_class,
-                raw_confidence=prediction.raw_confidence,
-                calibrated_confidence=prediction.calibrated_confidence,
-                uncertainty_score=prediction.uncertainty_score,
-                risk_level=v2_risk_level,
-                clinical_summary=clinical_summary,
-            )
-            history_service.save_scan(
-                record=record,
-                raw_image_bytes=contents,
+            history_service.record_scan(
+                prediction=prediction,
+                image_bytes=contents,
                 heatmap_bytes=prediction.saliency_heatmap_bytes,
             )
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.warning(f"Cloud persistence failed (non-fatal): {exc}")
 
     probs_response = [
         ClassProbabilityResponse(
@@ -285,11 +279,13 @@ def find_nearby_clinics(
 
 
 @router.post("/api/v1/clinical-summary", response_model=ClinicalSummaryResponse, tags=["Advisory"])
-def generate_summary_endpoint(payload: ClinicalSummaryRequest):
+def generate_summary_endpoint(
+    payload: ClinicalSummaryRequest,
+    groq_service: GroqService = Depends(get_groq_service),
+):
     """
     Generate real-time doctor-ready clinical interpretation using Groq LPU (llama-3.3-70b-versatile).
     """
-    groq_service = get_groq_service()
     try:
         risk_level_enum = RiskLevel(payload.risk_level)
     except ValueError:
@@ -307,4 +303,4 @@ def generate_summary_endpoint(payload: ClinicalSummaryRequest):
     )
 
     summary_text = groq_service.generate_clinical_summary(dummy_pred)
-    return ClinicalSummaryResponse(clinical_summary=summary_text)
+    return ClinicalSummaryResponse(clinical_summary=summary_text, model=groq_service.model)

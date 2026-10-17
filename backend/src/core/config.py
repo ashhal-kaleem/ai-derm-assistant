@@ -9,7 +9,7 @@ class Settings(BaseSettings):
     # Model & Inference
     MODEL_PATH: str = "checkpoints/efficientnet_b4_ham10000.onnx"
     DEFAULT_TEMPERATURE: float = 1.0
-    INPUT_SIZE: int = 224
+    INPUT_SIZE: int = 380  # EfficientNet-B4 native resolution
     
     # Groq LPU Clinical Narrative
     GROQ_API_KEY: Optional[str] = None

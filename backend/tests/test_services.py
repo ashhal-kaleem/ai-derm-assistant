@@ -50,8 +50,9 @@ def test_history_service_offline_fallback():
     assert record.id is not None
     assert record.predicted_class == "nv"
     assert record.risk_level == "BENIGN"
-    assert "scans" in record.image_url
-    assert "scans" in record.heatmap_url
+    # When Supabase is not configured, upload returns None — image_url should be empty string, not a fake URL
+    assert record.image_url == ""
+    assert record.heatmap_url is None
     
     recent = service.get_recent_scans(limit=5)
     assert len(recent) >= 1

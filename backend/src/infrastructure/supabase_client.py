@@ -47,8 +47,9 @@ class SupabaseCloudClient:
         file_name: str,
         bucket: str = "scans",
         content_type: str = "image/png"
-    ) -> str:
-        """Upload image/heatmap bytes to Supabase Cloud Storage and return public URL."""
+    ) -> Optional[str]:
+        """Upload image/heatmap bytes to Supabase Cloud Storage and return public URL.
+        Returns None if upload fails or credentials are not configured."""
         if self.client is not None:
             try:
                 unique_path = f"{uuid.uuid4()}_{file_name}"
@@ -60,10 +61,7 @@ class SupabaseCloudClient:
                 return self.client.storage.from_(bucket).get_public_url(unique_path)
             except Exception as e:
                 logger.error(f"Storage upload error: {e}")
-                pass
-        
-        # Cloud simulation / safe fallback when credentials are not yet configured
-        return f"https://cloud.supabase.co/storage/v1/object/public/{bucket}/{file_name}"
+        return None
 
     def insert_scan(self, scan_data: Dict[str, Any]) -> Dict[str, Any]:
         """Persist diagnostic scan record to Supabase 'scans' table."""

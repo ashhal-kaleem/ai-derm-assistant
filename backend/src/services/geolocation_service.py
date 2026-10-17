@@ -1,8 +1,9 @@
-"""Geolocation Service querying OpenStreetMap Nominatim API with resilient fallback."""
+"""Geolocation Service querying OpenStreetMap Overpass API with resilient fallback."""
 
 import json
 import logging
 import math
+import time
 import urllib.parse
 import urllib.request
 from typing import Any, Dict, List
@@ -12,7 +13,7 @@ logger = logging.getLogger("dermassist.geolocation")
 
 def calculate_haversine_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     """Calculate distance in kilometers between two GPS coordinates using the Haversine formula."""
-    r = 6371.0  # Earth radius in kilometers
+    r = 6371.0
     dlat = math.radians(lat2 - lat1)
     dlon = math.radians(lon2 - lon1)
     a = (
@@ -24,9 +25,9 @@ def calculate_haversine_distance(lat1: float, lon1: float, lat2: float, lon2: fl
 
 
 class GeolocationService:
-    """Fetches verified dermatology clinics and medical centers via OpenStreetMap Nominatim."""
+    """Fetches verified dermatology clinics via OpenStreetMap Overpass API (single request)."""
 
-    NOMINATIM_URL = "https://nominatim.openstreetmap.org/search"
+    OVERPASS_URL = "https://overpass-api.de/api/interpreter"
 
     def search_clinics(
         self,
@@ -35,72 +36,80 @@ class GeolocationService:
         radius_km: float = 5.0
     ) -> List[Dict[str, Any]]:
         """
-        Query real-time OpenStreetMap Nominatim API for dermatologists, skin clinics, and hospitals.
-        Uses geographic bounding box calculated from user coordinates and search radius.
+        Query Overpass API for dermatologists, skin clinics, and hospitals in one request.
+        Uses a radius-based around() filter — no rate-limit risk (single call).
         """
-        safe_radius = max(1.0, float(radius_km))
-        d_lat = safe_radius / 111.0
-        cos_lat = math.cos(math.radians(lat))
-        d_lon = safe_radius / (111.0 * cos_lat) if abs(cos_lat) > 1e-4 else d_lat
+        radius_m = int(max(1.0, float(radius_km)) * 1000)
 
-        min_lat = round(lat - d_lat, 4)
-        max_lat = round(lat + d_lat, 4)
-        min_lon = round(lon - d_lon, 4)
-        max_lon = round(lon + d_lon, 4)
-        viewbox_str = f"{min_lon},{max_lat},{max_lon},{min_lat}"
+        # Single Overpass QL query covering all relevant amenity/healthcare tags
+        overpass_query = f"""
+[out:json][timeout:10];
+(
+  node["healthcare"="dermatology"](around:{radius_m},{lat},{lon});
+  node["amenity"="doctors"]["healthcare:speciality"="dermatology"](around:{radius_m},{lat},{lon});
+  node["amenity"="clinic"](around:{radius_m},{lat},{lon});
+  node["amenity"="hospital"](around:{radius_m},{lat},{lon});
+  way["amenity"="clinic"](around:{radius_m},{lat},{lon});
+  way["amenity"="hospital"](around:{radius_m},{lat},{lon});
+);
+out center 12;
+"""
 
-        clinics: List[Dict[str, Any]] = []
-        seen_coords = set()
-
-        search_terms = ["dermatology", "skin clinic", "dermatologist", "clinic", "hospital"]
         headers = {
-            "User-Agent": "DermAssistAI-Production/2.0 (Clinical Triage Research; contact@dermassist.ai)",
-            "Accept": "application/json"
+            "User-Agent": "DermAssistAI/2.0 (open-source skin lesion triage tool)",
+            "Content-Type": "application/x-www-form-urlencoded",
         }
 
-        for term in search_terms:
-            if len(clinics) >= 8:
-                break
-            try:
-                params = urllib.parse.urlencode({
-                    "format": "json",
-                    "addressdetails": "1",
-                    "q": term,
-                    "viewbox": viewbox_str,
-                    "bounded": "1",
-                    "limit": "6"
-                })
-                req = urllib.request.Request(f"{self.NOMINATIM_URL}?{params}", headers=headers)
-                with urllib.request.urlopen(req, timeout=4.0) as response:
-                    if response.status == 200:
-                        items = json.loads(response.read().decode("utf-8"))
-                        for item in items:
+        clinics: List[Dict[str, Any]] = []
+        seen_coords: set = set()
+
+        try:
+            post_data = urllib.parse.urlencode({"data": overpass_query}).encode("utf-8")
+            req = urllib.request.Request(self.OVERPASS_URL, data=post_data, headers=headers)
+            with urllib.request.urlopen(req, timeout=12.0) as response:
+                if response.status == 200:
+                    result = json.loads(response.read().decode("utf-8"))
+                    for item in result.get("elements", []):
+                        # way elements have a center key; nodes have lat/lon directly
+                        if item.get("type") == "way":
+                            c_lat = float(item.get("center", {}).get("lat", 0.0))
+                            c_lon = float(item.get("center", {}).get("lon", 0.0))
+                        else:
                             c_lat = float(item.get("lat", 0.0))
                             c_lon = float(item.get("lon", 0.0))
-                            coord_key = (round(c_lat, 3), round(c_lon, 3))
-                            if coord_key in seen_coords:
-                                continue
-                            seen_coords.add(coord_key)
 
-                            name = item.get("name") or item.get("display_name", "").split(",")[0].strip() or "Specialized Medical Center"
-                            dist_km = calculate_haversine_distance(lat, lon, c_lat, c_lon)
+                        if not c_lat and not c_lon:
+                            continue
 
-                            addr_dict = item.get("address", {})
-                            parts = [addr_dict.get(k) for k in ["road", "suburb", "city_district", "city"] if addr_dict.get(k)]
-                            address_str = ", ".join(parts) if parts else item.get("display_name", "Medical District")
+                        coord_key = (round(c_lat, 3), round(c_lon, 3))
+                        if coord_key in seen_coords:
+                            continue
+                        seen_coords.add(coord_key)
 
-                            clinics.append({
-                                "name": name,
-                                "lat": c_lat,
-                                "lon": c_lon,
-                                "distance_km": dist_km,
-                                "address": address_str,
-                                "directions_url": f"https://www.google.com/maps/dir/?api=1&destination={c_lat},{c_lon}"
-                            })
-            except Exception as exc:
-                logger.warning(f"Nominatim query for term '{term}' failed: {exc}")
-                continue
+                        tags = item.get("tags", {})
+                        name = (
+                            tags.get("name")
+                            or tags.get("operator")
+                            or tags.get("amenity", "Medical Center").replace("_", " ").title()
+                        )
+                        addr_parts = [
+                            tags.get("addr:housenumber", ""),
+                            tags.get("addr:street", ""),
+                            tags.get("addr:city", ""),
+                        ]
+                        address_str = ", ".join(p for p in addr_parts if p) or "Address not listed"
+                        dist_km = calculate_haversine_distance(lat, lon, c_lat, c_lon)
 
-        # Sort ascending by distance
+                        clinics.append({
+                            "name": name,
+                            "lat": c_lat,
+                            "lon": c_lon,
+                            "distance_km": dist_km,
+                            "address": address_str,
+                            "directions_url": f"https://www.google.com/maps/dir/?api=1&destination={c_lat},{c_lon}",
+                        })
+        except Exception as exc:
+            logger.warning(f"Overpass API query failed: {exc}")
+
         clinics.sort(key=lambda x: x["distance_km"])
-        return clinics
+        return clinics[:8]

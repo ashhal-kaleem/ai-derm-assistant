@@ -23,7 +23,7 @@ def get_inference_service() -> InferenceService:
 @lru_cache()
 def get_groq_service() -> GroqService:
     settings = get_settings()
-    return GroqService(api_key=settings.GROQ_API_KEY)
+    return GroqService(api_key=settings.GROQ_API_KEY, model=settings.GROQ_MODEL)
 
 
 @lru_cache()

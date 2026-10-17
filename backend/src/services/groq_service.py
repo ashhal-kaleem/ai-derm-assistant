@@ -1,7 +1,7 @@
 """Groq Clinical Advisory Service with Static Fallback."""
 
 import os
-from typing import Any, Optional
+from typing import Optional
 from src.domain.knowledge_cards import get_knowledge_card
 from src.domain.models import PredictionResult
 
@@ -14,11 +14,9 @@ except ImportError:
 class GroqService:
     """Provides patient-friendly clinical educational summaries using Groq (Llama 3.3 70B)."""
 
-    def __init__(self, api_key: Any = "DEFAULT_KEY"):
-        if api_key == "DEFAULT_KEY":
-            self.api_key = os.getenv("GROQ_API_KEY")
-        else:
-            self.api_key = api_key
+    def __init__(self, api_key: Optional[str] = None, model: str = "llama-3.3-70b-versatile"):
+        self.api_key = api_key or os.getenv("GROQ_API_KEY")
+        self.model = model
         self.client = None
         if self.api_key and Groq is not None:
             try:
@@ -53,8 +51,8 @@ class GroqService:
             f"Write the concise 2-to-3 sentence clinical note."
         )
 
-        fallback_models = ["qwen/qwen3.8-27b", "openai/gpt-oss-120b"]
-        for model_name in fallback_models:
+        fallback_models = ["llama-3.1-8b-instant", "gemma2-9b-it"]
+        for model_name in [self.model] + fallback_models:
             try:
                 chat_completion = self.client.chat.completions.create(
                     messages=[

@@ -127,7 +127,7 @@ def map_risk_tier(class_code: str) -> tuple[str, str]:
     code = class_code.lower().strip()
     if code in ("mel", "bcc"):
         return ("red", "See doctor urgently")
-    elif code in ("akiec", "vasc"):
+    elif code == "akiec":
         return ("yellow", "Monitor")
     else:
         return ("green", "Benign")

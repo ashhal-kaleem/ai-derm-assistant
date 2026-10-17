@@ -44,7 +44,7 @@ class ClinicalSummaryRequest(BaseModel):
 
 class ClinicalSummaryResponse(BaseModel):
     clinical_summary: str
-    model: str = "llama-3.3-70b-versatile"
+    model: Optional[str] = None
 
 
 class HealthResponse(BaseModel):

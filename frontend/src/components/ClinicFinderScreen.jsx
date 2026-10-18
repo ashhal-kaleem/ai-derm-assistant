@@ -119,75 +119,10 @@ export const ClinicFinderScreen = ({ onStartScan, addToast }) => {
     }
   };
 
-  return (
-    <div className="pt-32 pb-20 px-4 max-w-5xl mx-auto space-y-8">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-200 pb-5">
-        <div>
-          <span className="text-[11px] font-mono font-semibold uppercase tracking-wider text-emerald-700 bg-emerald-100/60 px-2.5 py-0.5 rounded-full">
-            Clinical Referral Network
-          </span>
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-[#064E3B] font-heading mt-1">
-            Dermatology Clinic Finder
-          </h2>
-        </div>
+  const inRadius = clinics.filter((c) => c.distance_km == null || c.distance_km <= radiusKm);
+  const outsideDerm = clinics.filter((c) => c.is_dermatology && c.distance_km > radiusKm);
 
-        {/* Action Controls */}
-        <div className="flex flex-wrap items-center gap-3">
-          <button
-            onClick={handleUseMyLocation}
-            disabled={isLocating}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700 transition-colors shadow-sm disabled:opacity-50"
-          >
-            {isLocating ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            ) : (
-              <Navigation className="w-3.5 h-3.5" />
-            )}
-            <span>Use Current Location</span>
-          </button>
-
-          {/* Radius Selector */}
-          <div className="flex items-center gap-1 bg-white border border-slate-200 px-3 py-1.5 rounded-full text-xs font-mono">
-            <span className="text-slate-500">Radius:</span>
-            <select
-              value={radiusKm}
-              onChange={(e) => setRadiusKm(Number(e.target.value))}
-              className="bg-transparent font-bold text-emerald-800 focus:outline-none cursor-pointer"
-            >
-              <option value={5}>5 km</option>
-              <option value={10}>10 km</option>
-              <option value={25}>25 km</option>
-              <option value={50}>50 km</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      {errorMsg && (
-        <div className="p-3 bg-amber-50 border border-amber-200 text-amber-900 rounded-2xl text-xs flex items-center gap-2">
-          <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
-          <span>{errorMsg}</span>
-        </div>
-      )}
-
-      {/* Clinics Display Grid */}
-      {isLoading ? (
-        <div className="py-20 flex flex-col items-center justify-center text-slate-500">
-          <Loader2 className="w-8 h-8 animate-spin text-emerald-600 mb-3" />
-          <p className="text-xs font-mono">Scanning geolocated dermatology centers...</p>
-        </div>
-      ) : clinics.length === 0 ? (
-        <div className="bg-white rounded-3xl p-10 text-center border border-slate-200 max-w-md mx-auto">
-          <Compass className="w-10 h-10 text-slate-400 mx-auto mb-2" />
-          <h4 className="font-heading font-bold text-sm text-slate-800">
-            No clinics found within {radiusKm} km
-          </h4>
-          <p className="text-xs text-slate-500 mt-1">Try increasing the radius to 25 km or 50 km.</p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-2">
-          {clinics.map((clinic) => {
+  const renderClinicCard = (clinic) => {
             const mapDirectionsUrl =
               clinic.directions_url ||
               `https://www.google.com/maps/dir/?api=1&destination=${clinic.lat},${clinic.lon}`;
@@ -252,7 +187,97 @@ export const ClinicFinderScreen = ({ onStartScan, addToast }) => {
                 </div>
               </div>
             );
-          })}
+  };
+
+  return (
+    <div className="pt-32 pb-20 px-4 max-w-5xl mx-auto space-y-8">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-200 pb-5">
+        <div>
+          <span className="text-[11px] font-mono font-semibold uppercase tracking-wider text-emerald-700 bg-emerald-100/60 px-2.5 py-0.5 rounded-full">
+            Clinical Referral Network
+          </span>
+          <h2 className="text-2xl sm:text-3xl font-extrabold text-[#064E3B] font-heading mt-1">
+            Dermatology Clinic Finder
+          </h2>
+        </div>
+
+        {/* Action Controls */}
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            onClick={handleUseMyLocation}
+            disabled={isLocating}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700 transition-colors shadow-sm disabled:opacity-50"
+          >
+            {isLocating ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <Navigation className="w-3.5 h-3.5" />
+            )}
+            <span>Use Current Location</span>
+          </button>
+
+          {/* Radius Selector */}
+          <div className="flex items-center gap-1 bg-white border border-slate-200 px-3 py-1.5 rounded-full text-xs font-mono">
+            <span className="text-slate-500">Radius:</span>
+            <select
+              value={radiusKm}
+              onChange={(e) => setRadiusKm(Number(e.target.value))}
+              className="bg-transparent font-bold text-emerald-800 focus:outline-none cursor-pointer"
+            >
+              <option value={5}>5 km</option>
+              <option value={10}>10 km</option>
+              <option value={25}>25 km</option>
+              <option value={50}>50 km</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {errorMsg && (
+        <div className="p-3 bg-amber-50 border border-amber-200 text-amber-900 rounded-2xl text-xs flex items-center gap-2">
+          <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+          <span>{errorMsg}</span>
+        </div>
+      )}
+
+      {/* Clinics Display Grid */}
+      {isLoading ? (
+        <div className="py-20 flex flex-col items-center justify-center text-slate-500">
+          <Loader2 className="w-8 h-8 animate-spin text-emerald-600 mb-3" />
+          <p className="text-xs font-mono">Scanning geolocated dermatology centers...</p>
+        </div>
+      ) : (
+        <div className="space-y-10">
+          {inRadius.length === 0 ? (
+            <div className="bg-white rounded-3xl p-8 text-center border border-slate-200 max-w-md mx-auto">
+              <Compass className="w-10 h-10 text-slate-400 mx-auto mb-2" />
+              <h4 className="font-heading font-bold text-sm text-slate-800">No clinics listed within {radiusKm} km</h4>
+              <p className="text-xs text-slate-500 mt-1">Try a larger radius.</p>
+            </div>
+          ) : (
+            <section>
+              <h3 className="font-heading font-bold text-lg text-slate-900 mb-1">Within {radiusKm} km</h3>
+              {!inRadius.some((c) => c.is_dermatology) && (
+                <p className="text-xs text-slate-500 mb-4">
+                  No dermatologist is listed within {radiusKm} km. These hospitals and clinics may have a skin OPD.
+                </p>
+              )}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-2">
+                {inRadius.map(renderClinicCard)}
+              </div>
+            </section>
+          )}
+
+          {outsideDerm.length > 0 && (
+            <section>
+              <h3 className="font-heading font-bold text-lg text-slate-900 mb-1">Nearest dermatologists</h3>
+              <p className="text-xs text-slate-500 mb-4">Outside your {radiusKm} km radius.</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-2">
+                {outsideDerm.map(renderClinicCard)}
+              </div>
+            </section>
+          )}
         </div>
       )}
 
@@ -267,7 +292,7 @@ export const ClinicFinderScreen = ({ onStartScan, addToast }) => {
             <span>See more dermatologists near you on Google Maps</span>
             <ExternalLink className="w-4 h-4" />
           </a>
-          <p className="text-[11px] text-slate-400 mt-1">Listings from OpenStreetMap. Dermatologists are shown even if they're outside your radius.</p>
+          <p className="text-[11px] text-slate-400 mt-1">Listings from OpenStreetMap, which may not include every clinic.</p>
         </div>
       )}
     </div>

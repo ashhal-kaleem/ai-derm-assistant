@@ -45,6 +45,8 @@ from src.services.history_service import HistoryService
 from src.services.inference_service import InferenceService
 from src.services.report_service import ReportService
 
+MAX_IMAGE_SIDE = 1024
+
 router = APIRouter()
 
 @router.api_route("/", methods=["GET", "HEAD"], tags=["Discovery"])
@@ -115,7 +117,13 @@ async def predict_lesion(
     try:
         contents = await file.read()
         raw_img = Image.open(io.BytesIO(contents))
+        # Let JPEG decode at reduced scale instead of full 12MP resolution.
+        raw_img.draft("RGB", (MAX_IMAGE_SIDE, MAX_IMAGE_SIDE))
         image = ImageOps.exif_transpose(raw_img).convert("RGB")
+        # Phone photos (12MP+) blow past the 512 MB Render limit during the
+        # full-resolution heatmap overlay. The model only sees 380x380, so
+        # cap the working image size; predictions are unaffected.
+        image.thumbnail((MAX_IMAGE_SIDE, MAX_IMAGE_SIDE), Image.Resampling.LANCZOS)
     except Exception as exc:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

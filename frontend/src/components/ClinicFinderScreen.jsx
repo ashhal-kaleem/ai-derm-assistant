@@ -12,7 +12,6 @@ import {
   AlertCircle
 } from "lucide-react";
 import { PinContainer } from "@/components/ui/3d-pin";
-import { API_BASE_URL } from "@/config";
 import { searchClinics } from "@/lib/clinicSearch";
 
 export const ClinicFinderScreen = ({ onStartScan, addToast }) => {
@@ -111,20 +110,10 @@ export const ClinicFinderScreen = ({ onStartScan, addToast }) => {
       // Primary: query OpenStreetMap directly from the browser
       const list = await searchClinics(lat, lon, radius);
       setClinics(list);
-    } catch {
-      // Fallback: backend proxy
-      try {
-        const res = await fetch(`${API_BASE_URL}/clinics?lat=${lat}&lon=${lon}&radius_km=${radius}`);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
-        setClinics(Array.isArray(data) ? data : data.clinics || []);
-        if (data.status && data.status !== "ok") {
-          setErrorMsg(data.message || "Clinic search is temporarily unavailable. Please try again shortly.");
-        }
-      } catch {
-        setErrorMsg("Unable to retrieve nearby clinics. Please check your internet connection or try a larger radius.");
-        setClinics([]);
-      }
+    } catch (err) {
+      console.error("Clinic search failed:", err);
+      setErrorMsg("Map data service is busy right now. Please try again in a minute.");
+      setClinics([]);
     } finally {
       setIsLoading(false);
     }

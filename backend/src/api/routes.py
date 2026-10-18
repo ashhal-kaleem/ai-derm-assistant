@@ -39,7 +39,7 @@ from src.domain.models import (
 )
 
 logger = logging.getLogger("dermassist.routes")
-from src.services.geolocation_service import GeolocationService
+from src.services.geolocation_service import ClinicSearchError, GeolocationService
 from src.services.groq_service import GroqService
 from src.services.history_service import HistoryService
 from src.services.inference_service import InferenceService
@@ -276,13 +276,21 @@ def get_lesion_timeline(
 def find_nearby_clinics(
     lat: float = Query(..., description="User latitude"),
     lon: float = Query(..., description="User longitude"),
-    radius_km: float = Query(5.0, description="Search radius in kilometers"),
+    radius_km: float = Query(10.0, description="Search radius in kilometers (max 50)"),
     geo_service: GeolocationService = Depends(get_geolocation_service),
 ):
     """
     Fetch verified nearby dermatologists and medical centers via OpenStreetMap Overpass with fallback.
     """
-    raw_clinics = geo_service.search_clinics(lat=lat, lon=lon, radius_km=radius_km)
+    try:
+        raw_clinics = geo_service.search_clinics(lat=lat, lon=lon, radius_km=radius_km)
+    except ClinicSearchError as exc:
+        logger.warning(f"Clinic search unavailable: {exc}")
+        return ClinicSearchResponse(
+            clinics=[],
+            status="unavailable",
+            message="Map data service is busy right now. Please try again in a minute.",
+        )
     return ClinicSearchResponse(clinics=[ClinicItem(**c) for c in raw_clinics])
 
 

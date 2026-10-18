@@ -38,7 +38,9 @@ def _load_head(model_path: Optional[str]):
         return None
     with open(head_path) as f:
         h = json.load(f)
-    return np.asarray(h["weight"], dtype=np.float32), np.asarray(h["bias"], dtype=np.float32)
+    import base64
+    W = np.frombuffer(base64.b64decode(h["weight_f32_b64"]), dtype="<f4").reshape(h["shape"]).astype(np.float32)
+    return W, np.asarray(h["bias"], dtype=np.float32)
 
 
 class ONNXInferenceEngine:

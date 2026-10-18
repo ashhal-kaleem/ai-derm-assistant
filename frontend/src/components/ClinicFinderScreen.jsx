@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { PinContainer } from "@/components/ui/3d-pin";
 import { API_BASE_URL } from "@/config";
+import { searchClinics } from "@/lib/clinicSearch";
 
 export const ClinicFinderScreen = ({ onStartScan, addToast }) => {
   const [clinics, setClinics] = useState([]);
@@ -107,20 +108,23 @@ export const ClinicFinderScreen = ({ onStartScan, addToast }) => {
     setIsLoading(true);
     setErrorMsg(notice);
     try {
-      const res = await fetch(`${API_BASE_URL}/clinics?lat=${lat}&lon=${lon}&radius_km=${radius}`);
-      if (res.ok) {
+      // Primary: query OpenStreetMap directly from the browser
+      const list = await searchClinics(lat, lon, radius);
+      setClinics(list);
+    } catch {
+      // Fallback: backend proxy
+      try {
+        const res = await fetch(`${API_BASE_URL}/clinics?lat=${lat}&lon=${lon}&radius_km=${radius}`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
-        const list = Array.isArray(data) ? data : data.clinics || [];
-        setClinics(list);
+        setClinics(Array.isArray(data) ? data : data.clinics || []);
         if (data.status && data.status !== "ok") {
           setErrorMsg(data.message || "Clinic search is temporarily unavailable. Please try again shortly.");
         }
-      } else {
-        throw new Error("Unable to retrieve nearby clinics.");
+      } catch {
+        setErrorMsg("Unable to retrieve nearby clinics. Please check your internet connection or try a larger radius.");
+        setClinics([]);
       }
-    } catch {
-      setErrorMsg("Unable to retrieve nearby clinics. Please verify internet connection or try a larger search radius.");
-      setClinics([]);
     } finally {
       setIsLoading(false);
     }

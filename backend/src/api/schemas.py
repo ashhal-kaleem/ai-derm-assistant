@@ -100,8 +100,13 @@ class ClinicItem(BaseModel):
     lon: float
     distance_km: Optional[float] = None
     address: Optional[str] = None
+    phone: Optional[str] = None
+    category: Optional[str] = None
+    is_dermatology: bool = False
     directions_url: str
 
 
 class ClinicSearchResponse(BaseModel):
     clinics: List[ClinicItem]
+    status: str = "ok"
+    message: Optional[str] = None

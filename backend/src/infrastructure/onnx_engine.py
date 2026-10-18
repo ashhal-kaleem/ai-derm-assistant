@@ -28,6 +28,21 @@ def preprocess_image(image: Image.Image, target_size: Tuple[int, int] = (380, 38
     return np.expand_dims(chw_img, axis=0).astype(np.float32)
 
 
+def _load_head(model_path: Optional[str]):
+    """Load the retrained linear head (HAM10000 + PAD-UFES-20) if present next to the model."""
+    import json
+    if not model_path:
+        return None
+    head_path = os.path.join(os.path.dirname(model_path), "head_v2.json")
+    if os.getenv("DISABLE_HEAD_V2") or not os.path.exists(head_path):
+        return None
+    with open(head_path) as f:
+        h = json.load(f)
+    import base64
+    W = np.frombuffer(base64.b64decode(h["weight_f32_b64"]), dtype="<f4").reshape(h["shape"]).astype(np.float32)
+    return W, np.asarray(h["bias"], dtype=np.float32)
+
+
 class ONNXInferenceEngine:
     """Ultra-fast CPU inference runner using ONNX Runtime with sub-250ms target."""
 
@@ -80,6 +95,19 @@ class ONNXInferenceEngine:
             )
             self.input_name = self.session.get_inputs()[0].name
             self.output_name = self.session.get_outputs()[0].name
+            outputs = [o.name for o in self.session.get_outputs()]
+            self.head = _load_head(resolved_path) if "features" in outputs else None
+
+    head = None
+
+    def _logits(self, tensor: np.ndarray) -> np.ndarray:
+        """Logits for a (1,3,H,W) tensor, using the retrained head when available."""
+        if self.head is not None:
+            feats = self.session.run(["features"], {self.input_name: tensor})[0]
+            pooled = feats.mean(axis=(2, 3))
+            W, b = self.head
+            return (pooled @ W.T + b)[0]
+        return self.session.run(None, {self.input_name: tensor})[0][0]
 
     def run_inference(self, image: Image.Image) -> Tuple[np.ndarray, np.ndarray]:
         """Execute forward pass and return (raw_logits, activation_map).
@@ -93,8 +121,7 @@ class ONNXInferenceEngine:
             raise RuntimeError("Production ONNX session not loaded. Ensure checkpoints/efficientnet_b4_ham10000.onnx exists.")
 
         tensor = preprocess_image(image)
-        baseline_outputs = self.session.run(None, {self.input_name: tensor})
-        logits = baseline_outputs[0][0]
+        logits = self._logits(tensor)
 
         # Softmax of baseline
         exp_logits = np.exp(logits - np.max(logits))
@@ -115,8 +142,8 @@ class ONNXInferenceEngine:
                 c0, c1 = col * pw, (col + 1) * pw
                 # Replace patch with ImageNet channel means (already normalized space: mean=0)
                 occluded[0, :, r0:r1, c0:c1] = 0.0
-                occ_out = self.session.run(None, {self.input_name: occluded})
-                occ_exp = np.exp(occ_out[0][0] - np.max(occ_out[0][0]))
+                occ_logits = self._logits(occluded)
+                occ_exp = np.exp(occ_logits - np.max(occ_logits))
                 occ_probs = occ_exp / np.sum(occ_exp)
                 # Saliency = how much confidence dropped when this patch was hidden
                 saliency[row, col] = float(baseline_probs[top_class_idx] - occ_probs[top_class_idx])

@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 from PIL import Image, ImageOps
 
+from starlette.concurrency import run_in_threadpool
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
 
 from src.api.dependencies import (
@@ -131,7 +132,7 @@ async def predict_lesion(
         )
 
     try:
-        prediction = inference_service.predict(image)
+        prediction = await run_in_threadpool(inference_service.predict, image)
     except Exception as exc:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -148,7 +149,7 @@ async def predict_lesion(
     clinical_summary = None
     if generate_summary:
         try:
-            clinical_summary = groq_service.generate_clinical_summary(prediction)
+            clinical_summary = await run_in_threadpool(groq_service.generate_clinical_summary, prediction)
             prediction.clinical_summary = clinical_summary
         except Exception:
             clinical_summary = None
@@ -161,7 +162,8 @@ async def predict_lesion(
     # 4. Optional cloud persistence
     if save_to_cloud:
         try:
-            history_service.record_scan(
+            await run_in_threadpool(
+                history_service.record_scan,
                 prediction=prediction,
                 image_bytes=contents,
                 heatmap_bytes=prediction.saliency_heatmap_bytes,

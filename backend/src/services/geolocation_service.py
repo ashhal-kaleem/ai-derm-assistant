@@ -1,14 +1,16 @@
-"""Geolocation Service querying OpenStreetMap Overpass API with resilient fallback."""
+"""Geolocation service: nearby dermatologists and medical centres from OpenStreetMap Overpass."""
 
 import json
 import logging
 import math
-import time
 import urllib.parse
 import urllib.request
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Tuple
 
 logger = logging.getLogger("dermassist.geolocation")
+
+MAX_RESULTS = 12
+DERM_KEYWORDS = ("derma", "skin", "cutaneous", "laser", "aesthetic", "cosmetic")
 
 
 def calculate_haversine_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
@@ -24,92 +26,108 @@ def calculate_haversine_distance(lat1: float, lon1: float, lat2: float, lon2: fl
     return round(r * c, 2)
 
 
+def is_dermatology(tags: Dict[str, str]) -> bool:
+    """True when OSM tags or the name mark the place as a dermatology / skin provider."""
+    speciality = (tags.get("healthcare:speciality", "") + ";" + tags.get("healthcare", "")).lower()
+    if "dermatolog" in speciality:
+        return True
+    name = (tags.get("name", "") + " " + tags.get("name:en", "")).lower()
+    return any(k in name for k in DERM_KEYWORDS)
+
+
+def format_address(tags: Dict[str, str]) -> str:
+    if tags.get("addr:full"):
+        return tags["addr:full"]
+    parts = [
+        " ".join(p for p in (tags.get("addr:housenumber", ""), tags.get("addr:street", "")) if p),
+        tags.get("addr:suburb", "") or tags.get("addr:neighbourhood", ""),
+        tags.get("addr:city", ""),
+    ]
+    return ", ".join(p for p in parts if p) or "Address not listed"
+
+
+class ClinicSearchError(RuntimeError):
+    """Raised when every Overpass mirror failed."""
+
+
 class GeolocationService:
-    """Fetches verified dermatology clinics via OpenStreetMap Overpass API (single request)."""
+    """Fetches dermatologists first, then other clinics and hospitals, nearest first."""
 
-    OVERPASS_URL = "https://overpass-api.de/api/interpreter"
+    OVERPASS_URLS = (
+        "https://overpass-api.de/api/interpreter",
+        "https://overpass.kumi.systems/api/interpreter",
+        "https://overpass.private.coffee/api/interpreter",
+    )
 
-    def search_clinics(
-        self,
-        lat: float,
-        lon: float,
-        radius_km: float = 5.0
-    ) -> List[Dict[str, Any]]:
-        """
-        Query Overpass API for dermatologists, skin clinics, and hospitals in one request.
-        Uses a radius-based around() filter — no rate-limit risk (single call).
-        """
-        radius_m = int(max(1.0, float(radius_km)) * 1000)
-
-        # Single Overpass QL query covering all relevant amenity/healthcare tags
-        overpass_query = f"""
-[out:json][timeout:10];
+    def _build_query(self, lat: float, lon: float, radius_m: int) -> str:
+        around = f"(around:{radius_m},{lat},{lon})"
+        return f"""
+[out:json][timeout:20];
 (
-  node["healthcare"="dermatology"](around:{radius_m},{lat},{lon});
-  node["amenity"="doctors"]["healthcare:speciality"="dermatology"](around:{radius_m},{lat},{lon});
-  node["amenity"="clinic"](around:{radius_m},{lat},{lon});
-  node["amenity"="hospital"](around:{radius_m},{lat},{lon});
-  way["amenity"="clinic"](around:{radius_m},{lat},{lon});
-  way["amenity"="hospital"](around:{radius_m},{lat},{lon});
+  nwr["healthcare"="dermatology"]{around};
+  nwr["healthcare:speciality"~"dermatolog",i]{around};
+  nwr["name"~"derma|skin",i]["amenity"~"clinic|doctors|hospital"]{around};
+  nwr["name"~"derma|skin",i]["healthcare"]{around};
+  nwr["amenity"~"^(clinic|doctors|hospital)$"]["name"]{around};
 );
-out center 12;
+out center tags;
 """
 
+    def _query(self, query: str) -> Dict[str, Any]:
         headers = {
             "User-Agent": "DermAssistAI/2.0 (open-source skin lesion triage tool)",
             "Content-Type": "application/x-www-form-urlencoded",
         }
+        data = urllib.parse.urlencode({"data": query}).encode("utf-8")
+        last_exc: Exception = ClinicSearchError("no mirrors configured")
+        for url in self.OVERPASS_URLS:
+            try:
+                req = urllib.request.Request(url, data=data, headers=headers)
+                with urllib.request.urlopen(req, timeout=25.0) as response:
+                    return json.loads(response.read().decode("utf-8"))
+            except Exception as exc:  # try the next mirror
+                logger.warning(f"Overpass mirror {url} failed: {exc}")
+                last_exc = exc
+        raise ClinicSearchError(str(last_exc))
 
-        clinics: List[Dict[str, Any]] = []
-        seen_coords: set = set()
+    def search_clinics(self, lat: float, lon: float, radius_km: float = 10.0) -> List[Dict[str, Any]]:
+        """
+        Return up to MAX_RESULTS places: dermatology providers first, each group nearest first.
+        Raises ClinicSearchError when the map data source can't be reached.
+        """
+        radius_m = int(min(max(1.0, float(radius_km)), 50.0) * 1000)
+        result = self._query(self._build_query(lat, lon, radius_m))
 
-        try:
-            post_data = urllib.parse.urlencode({"data": overpass_query}).encode("utf-8")
-            req = urllib.request.Request(self.OVERPASS_URL, data=post_data, headers=headers)
-            with urllib.request.urlopen(req, timeout=12.0) as response:
-                if response.status == 200:
-                    result = json.loads(response.read().decode("utf-8"))
-                    for item in result.get("elements", []):
-                        # way elements have a center key; nodes have lat/lon directly
-                        if item.get("type") == "way":
-                            c_lat = float(item.get("center", {}).get("lat", 0.0))
-                            c_lon = float(item.get("center", {}).get("lon", 0.0))
-                        else:
-                            c_lat = float(item.get("lat", 0.0))
-                            c_lon = float(item.get("lon", 0.0))
+        seen: set = set()
+        places: List[Tuple[bool, float, Dict[str, Any]]] = []
+        for item in result.get("elements", []):
+            centre = item.get("center") or item
+            c_lat, c_lon = centre.get("lat"), centre.get("lon")
+            if c_lat is None or c_lon is None:
+                continue
+            tags = item.get("tags", {})
+            name = tags.get("name:en") or tags.get("name")
+            if not name:
+                continue
+            key = (name.strip().lower(), round(float(c_lat), 3), round(float(c_lon), 3))
+            if key in seen:
+                continue
+            seen.add(key)
 
-                        if not c_lat and not c_lon:
-                            continue
+            derm = is_dermatology(tags)
+            dist = calculate_haversine_distance(lat, lon, float(c_lat), float(c_lon))
+            kind = "Dermatology" if derm else tags.get("amenity", tags.get("healthcare", "clinic")).replace("_", " ").title()
+            places.append((derm, dist, {
+                "name": name,
+                "lat": float(c_lat),
+                "lon": float(c_lon),
+                "distance_km": dist,
+                "address": format_address(tags),
+                "phone": tags.get("phone") or tags.get("contact:phone"),
+                "category": kind,
+                "is_dermatology": derm,
+                "directions_url": f"https://www.google.com/maps/dir/?api=1&destination={c_lat},{c_lon}",
+            }))
 
-                        coord_key = (round(c_lat, 3), round(c_lon, 3))
-                        if coord_key in seen_coords:
-                            continue
-                        seen_coords.add(coord_key)
-
-                        tags = item.get("tags", {})
-                        name = (
-                            tags.get("name")
-                            or tags.get("operator")
-                            or tags.get("amenity", "Medical Center").replace("_", " ").title()
-                        )
-                        addr_parts = [
-                            tags.get("addr:housenumber", ""),
-                            tags.get("addr:street", ""),
-                            tags.get("addr:city", ""),
-                        ]
-                        address_str = ", ".join(p for p in addr_parts if p) or "Address not listed"
-                        dist_km = calculate_haversine_distance(lat, lon, c_lat, c_lon)
-
-                        clinics.append({
-                            "name": name,
-                            "lat": c_lat,
-                            "lon": c_lon,
-                            "distance_km": dist_km,
-                            "address": address_str,
-                            "directions_url": f"https://www.google.com/maps/dir/?api=1&destination={c_lat},{c_lon}",
-                        })
-        except Exception as exc:
-            logger.warning(f"Overpass API query failed: {exc}")
-
-        clinics.sort(key=lambda x: x["distance_km"])
-        return clinics[:8]
+        places.sort(key=lambda p: (not p[0], p[1]))
+        return [p[2] for p in places[:MAX_RESULTS]]

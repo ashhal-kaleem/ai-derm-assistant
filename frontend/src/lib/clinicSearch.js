@@ -33,14 +33,12 @@ function formatAddress(tags) {
 }
 
 function buildQuery(lat, lon, radiusM) {
+  // Tag-indexed filters only (cheap); dermatology is classified client-side.
   const around = `(around:${radiusM},${lat},${lon})`;
   return `[out:json][timeout:25];
 (
-  nwr["healthcare"="dermatology"]${around};
-  nwr["healthcare:speciality"~"dermatolog",i]${around};
-  nwr["name"~"derma|skin",i]["amenity"~"clinic|doctors|hospital"]${around};
-  nwr["name"~"derma|skin",i]["healthcare"]${around};
-  nwr["amenity"~"^(clinic|doctors|hospital)$"]["name"]${around};
+  nwr["healthcare"]${around};
+  nwr["amenity"~"^(clinic|doctors|hospital)$"]${around};
 );
 out center tags;`;
 }

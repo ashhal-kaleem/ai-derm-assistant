@@ -4,6 +4,7 @@ import { SoftAurora } from "@/components/ui/soft-aurora";
 import TechText from "@/components/ui/TechText";
 import { Stepper } from "@/components/ui/stepper";
 import { FileUpload } from "@/components/ui/file-upload";
+import { CameraCapture } from "@/components/ui/camera-capture";
 import { Button } from "@/components/ui/stateful-button";
 import { ImageScanLoader } from "@/components/ui/image-scan-loader";
 import { SpotlightCard } from "@/components/ui/spotlight-card";
@@ -160,22 +161,17 @@ export default function ScanScreen({ onAnalysisComplete, addToast }) {
 
           {/* Action Row: Camera trigger & Cloud Toggle */}
           <div className="mt-6 pt-5 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4">
-            {/* Camera Capture Input */}
-            <label className="flex items-center gap-2 text-xs font-medium text-slate-600 hover:text-emerald-700 cursor-pointer p-2 rounded-xl hover:bg-emerald-50 transition-colors">
-              <Camera className="w-4 h-4 text-emerald-600" />
-              <span>Capture via Device Camera</span>
-              <input
-                type="file"
-                accept="image/*"
-                capture="environment"
-                className="hidden"
-                onChange={(e) => {
-                  if (e.target.files && e.target.files[0]) {
-                    handleFilesChange(Array.from(e.target.files));
-                  }
-                }}
-              />
-            </label>
+            {/* Camera Capture: live camera on laptop & phone */}
+            <CameraCapture
+              onCapture={(file) => handleFilesChange([file])}
+              onError={(msg) => addToast?.({ type: "error", title: "Camera unavailable", message: msg })}
+            />
+            {previewUrl && (
+              <div className="flex items-center gap-3">
+                <img src={previewUrl} alt="Selected skin image" className="w-14 h-14 rounded-xl object-cover border border-emerald-200" />
+                <span className="text-xs text-slate-500">Image ready for analysis</span>
+              </div>
+            )}
 
           </div>
         </div>

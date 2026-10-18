@@ -2,7 +2,6 @@
 
 from typing import Tuple
 import numpy as np
-from scipy.optimize import minimize_scalar
 
 
 def softmax(logits: np.ndarray) -> np.ndarray:
@@ -31,6 +30,8 @@ def negative_log_likelihood(T: float, logits: np.ndarray, labels: np.ndarray) ->
 
 def optimize_temperature(logits: np.ndarray, labels: np.ndarray, bounds: Tuple[float, float] = (0.1, 10.0)) -> float:
     """Find the optimal temperature scalar T* that minimizes validation NLL loss."""
+    from scipy.optimize import minimize_scalar  # lazy: only used for offline calibration
+
     res = minimize_scalar(
         lambda T: negative_log_likelihood(T, logits, labels),
         bounds=bounds,

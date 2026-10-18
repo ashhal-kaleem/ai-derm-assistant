@@ -148,7 +148,6 @@ function toPlaces(elements, lat, lon) {
       phone: tags.phone || tags["contact:phone"] || null,
       category: derm ? "Dermatology" : kind.charAt(0).toUpperCase() + kind.slice(1),
       is_dermatology: derm,
-      directions_url: `https://www.google.com/maps/dir/?api=1&destination=${c.lat},${c.lon}`,
     });
   }
   return places;
@@ -192,4 +191,15 @@ export async function searchClinics(lat, lon, radiusKm = 10) {
 
 export function googleMapsDermSearchUrl(lat, lon) {
   return `https://www.google.com/maps/search/dermatologist/@${lat},${lon},13z`;
+}
+
+// Open the place itself on Google Maps: search its name near its coordinates.
+// (A bare lat/lon destination makes Google snap to whatever business is closest,
+// e.g. a burger shop next door, instead of the hospital.)
+export function googleMapsPlaceUrl(clinic) {
+  const q = [clinic.name, clinic.address].filter(Boolean).join(", ");
+  if (clinic.lat == null || clinic.lon == null) {
+    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`;
+  }
+  return `https://www.google.com/maps/search/${encodeURIComponent(clinic.name)}/@${clinic.lat},${clinic.lon},17z`;
 }

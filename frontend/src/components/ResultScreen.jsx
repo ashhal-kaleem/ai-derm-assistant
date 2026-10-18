@@ -45,6 +45,19 @@ export default function ResultScreen({
   }
 
   const confidencePercent = (prediction.confidence * 100);
+  const CLASS_LABELS = [
+    "Actinic Keratosis", "Basal Cell Carcinoma", "Benign Keratosis", "Dermatofibroma",
+    "Melanoma", "Melanocytic Nevus (Mole)", "Vascular Lesion",
+  ];
+  const rankedAlternatives = Array.isArray(prediction.all_probs)
+    ? prediction.all_probs
+        .map((p, i) => ({ name: CLASS_LABELS[i], p: Number(p) || 0 }))
+        .sort((a, b) => b.p - a.p)
+        .slice(1, 3)
+        .filter((a) => a.p >= 0.1)
+    : [];
+  const isLowConfidence =
+    (prediction.confidence ?? 1) < 0.6 || String(prediction.uncertainty).toLowerCase() === "high";
   const uncertaintyLabel =
     confidencePercent >= 85 ? "Low Uncertainty" : confidencePercent >= 65 ? "Moderate Uncertainty" : "High Uncertainty";
   const uncertaintyColor =
@@ -143,6 +156,23 @@ export default function ResultScreen({
           </button>
         </div>
       </div>
+
+      {isLowConfidence && (
+        <Alert variant="warning">
+          <AlertTriangle className="w-4 h-4" />
+          <AlertTitle>Image unclear: the AI isn't confident about this result</AlertTitle>
+          <AlertDescription>
+            <p>
+              Retake the photo close to the spot (about 10 cm away), in daylight, in focus, with only the lesion filling
+              most of the frame.
+              {rankedAlternatives.length > 0 && (
+                <> It could also be {rankedAlternatives.map((a) => `${a.name} (${Math.round(a.p * 100)}%)`).join(" or ")}.</>
+              )}{" "}
+              Please show it to a dermatologist either way.
+            </p>
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* Main Grid: Visualizer & Result Metrics */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">

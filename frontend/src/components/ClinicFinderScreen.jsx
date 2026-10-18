@@ -40,41 +40,66 @@ export const ClinicFinderScreen = ({ onStartScan, addToast }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [radiusKm]);
 
-  const handleUseMyLocation = () => {
-    if (!navigator.geolocation) {
-      fetchClinics(defaultCoords.lat, defaultCoords.lon, radiusKm);
-      if (addToast) {
-        addToast({
-          type: "error",
-          title: "Geolocation Unsupported",
-          message: "Your browser does not support automatic location discovery.",
-        });
+  const GEO_ERROR_REASONS = {
+    1: "location permission is blocked for this site",
+    2: "your device's location service is off (check Windows/macOS location settings)",
+    3: "location request timed out",
+  };
+
+  const getPosition = (options) =>
+    new Promise((resolve, reject) => navigator.geolocation.getCurrentPosition(resolve, reject, options));
+
+  // Approximate city-level location from the IP address (no permission needed)
+  const getIpLocation = async () => {
+    const res = await fetch("https://ipwho.is/");
+    const data = await res.json();
+    if (!data.success || typeof data.latitude !== "number") throw new Error("IP lookup failed");
+    return { lat: data.latitude, lon: data.longitude, city: data.city };
+  };
+
+  const handleUseMyLocation = async () => {
+    setIsLocating(true);
+    let reason = "your browser doesn't support location";
+
+    if (navigator.geolocation) {
+      // Fast network-based fix first, then one high-accuracy retry (GPS/Wi-Fi)
+      const attempts = [
+        { enableHighAccuracy: false, timeout: 15000, maximumAge: 10 * 60 * 1000 },
+        { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 },
+      ];
+      for (const opts of attempts) {
+        try {
+          const pos = await getPosition(opts);
+          const loc = { lat: pos.coords.latitude, lon: pos.coords.longitude };
+          setIsLocating(false);
+          setUserLocation(loc);
+          fetchClinics(loc.lat, loc.lon, radiusKm);
+          if (addToast) {
+            addToast({ type: "success", title: "Location Acquired", message: "Showing clinics near you." });
+          }
+          return;
+        } catch (err) {
+          reason = GEO_ERROR_REASONS[err?.code] || reason;
+          if (err?.code === 1) break; // permission denied: retrying won't help
+        }
       }
-      return;
     }
 
-    setIsLocating(true);
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setIsLocating(false);
-        const loc = { lat: pos.coords.latitude, lon: pos.coords.longitude };
-        setUserLocation(loc);
-        fetchClinics(loc.lat, loc.lon, radiusKm);
-        if (addToast) {
-          addToast({
-            type: "success",
-            title: "Location Acquired",
-            message: `Nearby clinics located.`,
-          });
-        }
-      },
-      (err) => {
-        setIsLocating(false);
-        setUserLocation(null);
-        fetchClinics(defaultCoords.lat, defaultCoords.lon, radiusKm, "Location unavailable, showing clinics near Lahore. Allow location access for results near you.");
-      },
-      { timeout: 10000 }
-    );
+    try {
+      const ipLoc = await getIpLocation();
+      setIsLocating(false);
+      setUserLocation({ lat: ipLoc.lat, lon: ipLoc.lon });
+      fetchClinics(
+        ipLoc.lat,
+        ipLoc.lon,
+        radiusKm,
+        `Using your approximate location${ipLoc.city ? ` (${ipLoc.city})` : ""} because ${reason}.`
+      );
+    } catch {
+      setIsLocating(false);
+      setUserLocation(null);
+      fetchClinics(defaultCoords.lat, defaultCoords.lon, radiusKm, `Showing clinics near Lahore because ${reason}.`);
+    }
   };
 
   const fetchClinics = async (lat, lon, radius, notice = null) => {

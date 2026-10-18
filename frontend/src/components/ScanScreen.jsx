@@ -17,6 +17,32 @@ const WORKFLOW_STEPS = [
   { id: 4, title: "4. Clinical Report" },
 ];
 
+const MAX_UPLOAD_SIDE = 1024;
+
+// Phone photos are 12MP+; the model only needs 380x380. Downscale in the
+// browser so uploads are small and the 512 MB backend never runs out of memory.
+async function downscaleImage(file, maxSide = MAX_UPLOAD_SIDE) {
+  try {
+    const bitmap = await createImageBitmap(file, { imageOrientation: "from-image" });
+    const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));
+    if (scale === 1 && file.size < 1.5 * 1024 * 1024) {
+      bitmap.close?.();
+      return file;
+    }
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.round(bitmap.width * scale);
+    canvas.height = Math.round(bitmap.height * scale);
+    canvas.getContext("2d").drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    bitmap.close?.();
+    const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.92));
+    if (!blob) return file;
+    const name = (file.name || "upload").replace(/\.[^.]+$/, "") + ".jpg";
+    return new File([blob], name, { type: "image/jpeg" });
+  } catch {
+    return file; // fall back to the original if the browser can't decode it
+  }
+}
+
 export default function ScanScreen({ onAnalysisComplete, addToast }) {
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [previewUrl, setPreviewUrl] = useState(null);
@@ -46,8 +72,9 @@ export default function ScanScreen({ onAnalysisComplete, addToast }) {
     }
 
     setIsAnalyzing(true);
+    const uploadFile = await downscaleImage(selectedFiles[0]);
     const formData = new FormData();
-    formData.append("file", selectedFiles[0]);
+    formData.append("file", uploadFile);
     formData.append("save_to_cloud", "true");
 
     try {

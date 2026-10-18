@@ -130,7 +130,7 @@ class ONNXInferenceEngine:
 
         # Occlusion sensitivity: 6x6 grid of non-overlapping patches
         # Each patch replaced with ImageNet mean; confidence drop = saliency
-        GRID = 6
+        GRID = 4  # 16 occlusion passes; 6x6 (36) was too slow on Render free tier (0.1 CPU)
         h, w = tensor.shape[2], tensor.shape[3]
         ph, pw = h // GRID, w // GRID
         saliency = np.zeros((GRID, GRID), dtype=np.float32)

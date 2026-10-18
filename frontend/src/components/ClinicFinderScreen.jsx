@@ -12,7 +12,7 @@ import {
   AlertCircle
 } from "lucide-react";
 import { PinContainer } from "@/components/ui/3d-pin";
-import { searchClinics, googleMapsDermSearchUrl } from "@/lib/clinicSearch";
+import { searchClinics, googleMapsDermSearchUrl, googleMapsPlaceUrl } from "@/lib/clinicSearch";
 
 export const ClinicFinderScreen = ({ onStartScan, addToast }) => {
   const [clinics, setClinics] = useState([]);
@@ -124,8 +124,7 @@ export const ClinicFinderScreen = ({ onStartScan, addToast }) => {
 
   const renderClinicCard = (clinic) => {
             const mapDirectionsUrl =
-              clinic.directions_url ||
-              `https://www.google.com/maps/dir/?api=1&destination=${clinic.lat},${clinic.lon}`;
+              googleMapsPlaceUrl(clinic);
 
             return (
               <div

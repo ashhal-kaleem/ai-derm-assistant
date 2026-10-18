@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   MapPin,
   Navigation,
@@ -21,16 +21,28 @@ export const ClinicFinderScreen = ({ onStartScan, addToast }) => {
   const [isLocating, setIsLocating] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
+  const hasSearched = useRef(false);
 
-  // Default coordinate if geolocation not active: 28.6139, 77.2090 (Delhi)
-  const defaultCoords = { lat: 28.6139, lon: 77.2090 };
+  // Fallback when location is unavailable or denied: Lahore city centre
+  const defaultCoords = { lat: 31.5204, lon: 74.3587 };
 
+  // Ask for the user's location once on first load
   useEffect(() => {
-    fetchClinics(defaultCoords.lat, defaultCoords.lon, radiusKm);
+    handleUseMyLocation();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Re-run the search when the radius changes (after the first location fix)
+  useEffect(() => {
+    if (!hasSearched.current) return;
+    const loc = userLocation || defaultCoords;
+    fetchClinics(loc.lat, loc.lon, radiusKm);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [radiusKm]);
 
   const handleUseMyLocation = () => {
     if (!navigator.geolocation) {
+      fetchClinics(defaultCoords.lat, defaultCoords.lon, radiusKm);
       if (addToast) {
         addToast({
           type: "error",
@@ -58,22 +70,26 @@ export const ClinicFinderScreen = ({ onStartScan, addToast }) => {
       },
       (err) => {
         setIsLocating(false);
-        setErrorMsg("Location access denied. Displaying reference clinics.");
-        fetchClinics(defaultCoords.lat, defaultCoords.lon, radiusKm);
+        setUserLocation(null);
+        fetchClinics(defaultCoords.lat, defaultCoords.lon, radiusKm, "Location unavailable, showing clinics near Lahore. Allow location access for results near you.");
       },
       { timeout: 10000 }
     );
   };
 
-  const fetchClinics = async (lat, lon, radius) => {
+  const fetchClinics = async (lat, lon, radius, notice = null) => {
+    hasSearched.current = true;
     setIsLoading(true);
-    setErrorMsg(null);
+    setErrorMsg(notice);
     try {
       const res = await fetch(`${API_BASE_URL}/clinics?lat=${lat}&lon=${lon}&radius_km=${radius}`);
       if (res.ok) {
         const data = await res.json();
         const list = Array.isArray(data) ? data : data.clinics || [];
         setClinics(list);
+        if (data.status && data.status !== "ok") {
+          setErrorMsg(data.message || "Clinic search is temporarily unavailable. Please try again shortly.");
+        }
       } else {
         throw new Error("Unable to retrieve nearby clinics.");
       }
@@ -154,13 +170,13 @@ export const ClinicFinderScreen = ({ onStartScan, addToast }) => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-2">
           {clinics.map((clinic) => {
-            const mapDirectionsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(
-              clinic.name + " " + clinic.address
-            )}`;
+            const mapDirectionsUrl =
+              clinic.directions_url ||
+              `https://www.google.com/maps/dir/?api=1&destination=${clinic.lat},${clinic.lon}`;
 
             return (
               <div
-                key={clinic.id || clinic.name}
+                key={clinic.id || `${clinic.name}-${clinic.lat}-${clinic.lon}`}
                 className="bg-white rounded-3xl p-6 border border-emerald-500/20 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between"
               >
                 <div>
@@ -176,6 +192,15 @@ export const ClinicFinderScreen = ({ onStartScan, addToast }) => {
                   <h4 className="font-heading font-bold text-base text-slate-900 mb-1">
                     {clinic.name}
                   </h4>
+                  {clinic.category && (
+                    <span
+                      className={`inline-block text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full mb-2 ${
+                        clinic.is_dermatology ? "bg-emerald-600 text-white" : "bg-slate-100 text-slate-600"
+                      }`}
+                    >
+                      {clinic.is_dermatology ? "Dermatology" : clinic.category}
+                    </span>
+                  )}
                   <p className="text-xs text-slate-500 leading-relaxed mb-4">
                     {clinic.address}
                   </p>

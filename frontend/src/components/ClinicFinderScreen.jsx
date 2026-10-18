@@ -12,7 +12,7 @@ import {
   AlertCircle
 } from "lucide-react";
 import { PinContainer } from "@/components/ui/3d-pin";
-import { searchClinics } from "@/lib/clinicSearch";
+import { searchClinics, googleMapsDermSearchUrl } from "@/lib/clinicSearch";
 
 export const ClinicFinderScreen = ({ onStartScan, addToast }) => {
   const [clinics, setClinics] = useState([]);
@@ -253,6 +253,21 @@ export const ClinicFinderScreen = ({ onStartScan, addToast }) => {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {!isLoading && (
+        <div className="text-center">
+          <a
+            href={googleMapsDermSearchUrl((userLocation || defaultCoords).lat, (userLocation || defaultCoords).lon)}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-1.5 text-sm font-semibold text-emerald-700 hover:text-emerald-900"
+          >
+            <span>See more dermatologists near you on Google Maps</span>
+            <ExternalLink className="w-4 h-4" />
+          </a>
+          <p className="text-[11px] text-slate-400 mt-1">Listings from OpenStreetMap. Dermatologists are shown even if they're outside your radius.</p>
         </div>
       )}
     </div>

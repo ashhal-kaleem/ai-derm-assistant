@@ -8,7 +8,8 @@ const OVERPASS_URLS = [
 ];
 const DERM_STRONG = ["derma", "skin", "cutaneous", "cosmetolog"];
 const DERM_WEAK = ["laser", "aesthetic", "cosmetic"];
-const NOT_DERM = /\b(dental|dentist|dento|ent|eye|hearing|vision|kidney|gynae)\b/i;
+const NOT_DERM = /\b(dental|dentist|dento|ent|eye|hearing|vision|kidney|gyn\w*|children|child|maternity|homeo\w*|herbal|vet\w*|psychiatr\w*|physio\w*)\b/i;
+const DERM_SEARCH_MIN_KM = 25; // dermatologists are sparse: always look at least this far
 const MAX_RESULTS = 12;
 
 export function haversineKm(lat1, lon1, lat2, lon2) {
@@ -68,7 +69,7 @@ async function queryOverpass(query) {
 }
 
 const PHOTON_URL = "https://photon.komoot.io/api/";
-const PHOTON_TERMS = ["skin", "derma", "dermatology", "dermatologist", "laser", "cosmetic", "aesthetic", "hospital", "clinic", "medical"];
+const PHOTON_TERMS = ["skin", "derma", "dermatologist", "laser", "cosmetic", "hospital", "clinic"];
 const PHOTON_TAGS = ["amenity:hospital", "amenity:clinic", "amenity:doctors", "healthcare"];
 const EXCLUDED_VALUES = new Set(["dentist", "veterinary", "pharmacy", "parking", "optometrist", "physiotherapist"]);
 
@@ -95,6 +96,16 @@ async function photonQuery(term, lat, lon, bbox) {
 async function searchPhoton(lat, lon, radiusKm) {
   const bbox = bboxAround(lat, lon, radiusKm);
   const results = await Promise.allSettled(PHOTON_TERMS.map((t) => photonQuery(t, lat, lon, bbox)));
+  // Retry any failed term once (Photon occasionally drops bursts)
+  for (let i = 0; i < results.length; i++) {
+    if (results[i].status === "rejected") {
+      try {
+        results[i] = { status: "fulfilled", value: await photonQuery(PHOTON_TERMS[i], lat, lon, bbox) };
+      } catch {
+        /* keep as rejected */
+      }
+    }
+  }
   if (results.every((r) => r.status === "rejected")) throw new Error("Photon unavailable");
   const elements = [];
   for (const r of results) {
@@ -117,8 +128,7 @@ async function searchPhoton(lat, lon, radiusKm) {
   return elements;
 }
 
-function toPlaces(elements, lat, lon, radiusKm) {
-  const seen = new Set();
+function toPlaces(elements, lat, lon) {
   const places = [];
   for (const el of elements) {
     const c = el.center || el;
@@ -126,11 +136,6 @@ function toPlaces(elements, lat, lon, radiusKm) {
     const tags = el.tags || {};
     const name = tags["name:en"] || tags.name;
     if (!name) continue;
-    const key = `${name.trim().toLowerCase()}|${c.lat.toFixed(3)}|${c.lon.toFixed(3)}`;
-    if (seen.has(key)) continue;
-    seen.add(key);
-    const dist = haversineKm(lat, lon, c.lat, c.lon);
-    if (dist > radiusKm) continue;
     const derm = isDermatology(tags);
     const kind = (tags.amenity || tags.healthcare || "clinic").replace(/_/g, " ");
     places.push({
@@ -138,7 +143,7 @@ function toPlaces(elements, lat, lon, radiusKm) {
       name,
       lat: c.lat,
       lon: c.lon,
-      distance_km: dist,
+      distance_km: haversineKm(lat, lon, c.lat, c.lon),
       address: formatAddress(tags),
       phone: tags.phone || tags["contact:phone"] || null,
       category: derm ? "Dermatology" : kind.charAt(0).toUpperCase() + kind.slice(1),
@@ -146,19 +151,45 @@ function toPlaces(elements, lat, lon, radiusKm) {
       directions_url: `https://www.google.com/maps/dir/?api=1&destination=${c.lat},${c.lon}`,
     });
   }
-  places.sort((a, b) => (a.is_dermatology === b.is_dermatology ? a.distance_km - b.distance_km : a.is_dermatology ? -1 : 1));
-  return places.slice(0, MAX_RESULTS);
+  return places;
+}
+
+// Same name within 1.5 km = same place (OSM often has a node and a building for one hospital)
+function dedupe(places) {
+  const kept = [];
+  for (const p of places.sort((a, b) => a.distance_km - b.distance_km)) {
+    const norm = p.name.trim().toLowerCase().replace(/\s+/g, " ");
+    const dup = kept.some(
+      (k) => k.name.trim().toLowerCase().replace(/\s+/g, " ") === norm && haversineKm(k.lat, k.lon, p.lat, p.lon) < 1.5
+    );
+    if (!dup) kept.push(p);
+  }
+  return kept;
+}
+
+function rank(places, radiusKm) {
+  const unique = dedupe(places);
+  // Dermatologists: nearest first, even beyond the chosen radius (they're rare in OSM)
+  const derm = unique.filter((p) => p.is_dermatology && p.distance_km <= Math.max(radiusKm, DERM_SEARCH_MIN_KM)).slice(0, 6);
+  // General hospitals/clinics inside the radius, skipping unrelated specialities
+  const general = unique.filter((p) => !p.is_dermatology && p.distance_km <= radiusKm && !NOT_DERM.test(p.name));
+  return [...derm, ...general].slice(0, MAX_RESULTS);
 }
 
 // Photon (komoot) first: fast, CORS-enabled, no strict rate limit. Overpass as backup.
 export async function searchClinics(lat, lon, radiusKm = 10) {
   const radius = Math.min(Math.max(1, Number(radiusKm)), 50);
+  const searchKm = Math.max(radius, DERM_SEARCH_MIN_KM);
   try {
-    const places = toPlaces(await searchPhoton(lat, lon, radius), lat, lon, radius);
+    const places = rank(toPlaces(await searchPhoton(lat, lon, searchKm), lat, lon), radius);
     if (places.length) return places;
   } catch (err) {
     console.warn("Photon search failed, trying Overpass:", err);
   }
   const data = await queryOverpass(buildQuery(lat, lon, Math.round(radius * 1000)));
-  return toPlaces(data.elements || [], lat, lon, radius);
+  return rank(toPlaces(data.elements || [], lat, lon), radius);
+}
+
+export function googleMapsDermSearchUrl(lat, lon) {
+  return `https://www.google.com/maps/search/dermatologist/@${lat},${lon},13z`;
 }

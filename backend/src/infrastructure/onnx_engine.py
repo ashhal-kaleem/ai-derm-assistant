@@ -71,6 +71,8 @@ class ONNXInferenceEngine:
             sess_options = ort.SessionOptions()
             sess_options.intra_op_num_threads = 2
             sess_options.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
+            # Return memory to the OS after each run instead of keeping a growing arena (fits Render's 512 MB)
+            sess_options.enable_cpu_mem_arena = False
             self.session = ort.InferenceSession(
                 resolved_path,
                 sess_options=sess_options,

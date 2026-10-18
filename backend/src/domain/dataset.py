@@ -1,7 +1,10 @@
 """Dataset Partitioning and Patient-Aware Leakage Prevention Engine."""
+from __future__ import annotations
 
-from typing import Dict, List, Set, Tuple
-import pandas as pd
+from typing import TYPE_CHECKING, Dict, List, Set, Tuple
+
+if TYPE_CHECKING:  # pandas is only needed for offline dataset work, not the API
+    import pandas as pd
 
 
 def verify_zero_patient_leakage(train_df: pd.DataFrame, val_df: pd.DataFrame, group_col: str = "lesion_id") -> bool:

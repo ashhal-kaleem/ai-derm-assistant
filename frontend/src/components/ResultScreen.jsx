@@ -20,12 +20,14 @@ import { ProbabilityBarChart } from "@/components/ui/probability-bar-chart";
 import { SpotlightCard } from "@/components/ui/spotlight-card";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { API_BASE_URL, STATIC_KNOWLEDGE_CARDS } from "@/config";
+import SaveToHistory from "@/components/SaveToHistory";
 
 export default function ResultScreen({
   prediction,
   originalImage,
   onReset,
   onFindDoctors,
+  onViewHistory,
   addToast
 }) {
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
@@ -277,7 +279,12 @@ export default function ResultScreen({
           </div>
         </div>
       </div>
-
+        <SaveToHistory
+            prediction={prediction}
+             originalImage={originalImage}
+             addToast={addToast}
+             onViewHistory={onViewHistory}
+         />
       {/* 11. 7-Class Probability Bar Chart Section */}
       <div className="pt-4">
         <ProbabilityBarChart probabilities={prediction.probabilities || {}} />

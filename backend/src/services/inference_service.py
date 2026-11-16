@@ -30,11 +30,16 @@ class InferenceService:
         self.engine = engine or ONNXInferenceEngine()
         self.temperature = max(0.1, float(temperature))
 
-    # A top-1 softmax result is not safe to present as a classification when
-    # the model is nearly tied or its distribution is highly uncertain.
-    MIN_ACTIONABLE_CONFIDENCE = 0.55
-    MIN_ACTIONABLE_MARGIN = 0.12
-    MAX_ACTIONABLE_UNCERTAINTY = 0.72
+    # Conservative provisional gates. These are engineering guardrails, not
+    # clinically validated operating points; review/abstention is preferred to
+    # false reassurance while external clinical validation is pending.
+    MIN_ACTIONABLE_CONFIDENCE = 0.80
+    MIN_ACTIONABLE_MARGIN = 0.20
+    MAX_ACTIONABLE_UNCERTAINTY = 0.50
+    MIN_GREEN_CONFIDENCE = 0.85
+    MIN_GREEN_MARGIN = 0.25
+    MAX_GREEN_UNCERTAINTY = 0.40
+    BENIGN_CODES = frozenset({"bkl", "df", "nv", "vasc"})
 
     def predict(self, image: Image.Image) -> PredictionResult:
         """Execute full inference pipeline on a PIL RGB image."""
@@ -83,14 +88,22 @@ class InferenceService:
             abstention_reasons.append("the model output is highly uncertain")
 
         # Routing is deliberately stricter than simply displaying the top
-        # class: malignant classes always require clinician review, while
-        # uncertain outputs are never routed as green/actionable.
-        if top_prob.risk_level.value == "MALIGNANT" or abstention_reasons:
+        # class: malignant and potentially malignant classes always require
+        # clinician review, while only high-confidence benign outputs can be
+        # routed green. Abstentions are never presented as benign/actionable.
+        if top_prob.risk_level.value == "MALIGNANT":
             routing_zone = "red"
-        elif top_prob.probability < 0.75 or margin < 0.20 or normalized_uncertainty > 0.55:
+        elif top_prob.code == "akiec" or abstention_reasons:
             routing_zone = "yellow"
-        else:
+        elif (
+            top_prob.code in self.BENIGN_CODES
+            and top_prob.probability >= self.MIN_GREEN_CONFIDENCE
+            and margin >= self.MIN_GREEN_MARGIN
+            and normalized_uncertainty <= self.MAX_GREEN_UNCERTAINTY
+        ):
             routing_zone = "green"
+        else:
+            routing_zone = "yellow"
         
         # 6. Generate occlusion-sensitivity explainability heatmap overlay
         rgb_array = np.array(image.convert("RGB"), dtype=np.uint8)

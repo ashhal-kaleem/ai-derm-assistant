@@ -140,3 +140,9 @@ Every task follows a strict 4-step atomic verification cycle:
 - ONNX Runtime smoke test passed with input `1x3x380x380`, `features` `1x1792x12x12`, and seven-class head shape `[7,1792]`.
 - Fixed the safe Kaggle notebook builder packaging cell to require and include `.onnx.data` plus matching `head_v2.json`, with ZIP completeness assertions. Existing Version 12 ZIP was intentionally not treated as deployable because it omitted `.onnx.data`.
 - Verification: `PYTHONPATH=backend pytest backend/tests -q` passed 21 tests; `cd frontend && npm run build` passed; notebook builder syntax and packaging checks passed.
+
+## 2026-11-16 Conservative Inference Guardrails
+- Added provisional abstention gates in `backend/src/services/inference_service.py`: calibrated top probability must be at least 0.80, top-two margin at least 0.20, and normalized entropy at most 0.50 for an actionable result.
+- Green routing is stricter and limited to benign classes (`bkl`, `df`, `nv`, `vasc`): confidence >= 0.85, margin >= 0.25, and normalized entropy <= 0.40. `akiec` routes yellow; `bcc` and `mel` route red for clinician review.
+- Added deterministic threshold regression tests. Verification: compileall passed, targeted inference tests 4/4 passed, full backend suite 24/24 passed, and `git diff --check` passed.
+- These are explicitly provisional engineering guardrails, not clinically validated operating points; production model weights remain unchanged.

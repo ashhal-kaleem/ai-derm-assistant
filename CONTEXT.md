@@ -133,3 +133,10 @@ Every task follows a strict 4-step atomic verification cycle:
 - Added feedback submission and in-process aggregation endpoints with class-pair counts plus frontend controls.
 - Verification: `python3 -m compileall -q backend/src` passed; `PYTHONPATH=backend pytest backend/tests -q` passed 21 tests; `cd frontend && npm run build` passed; `npm run lint` passed with 0 errors and 10 pre-existing warnings; `git diff --check` passed.
 - Known limitation: feedback aggregation is process-local until a durable feedback table/RLS policy is deployed; the existing seven-class taxonomy is unchanged; no new validated temperature value was claimed.
+
+## 2026-11-16 Candidate Artifact Safety
+- Downloaded Kaggle Version 12 candidate artifacts to `/home/ubuntu/Downloads/kaggle_v12/`; production `backend/checkpoints/` was not modified.
+- Candidate validation: lesion-disjoint final-test accuracy 0.8580, balanced accuracy 0.7000, macro F1 0.7116; BCC recall 0.7500; MEL recall 0.6190. Independent calibration reduced ECE 0.0832 → 0.0351 with temperature 1.5698.
+- ONNX Runtime smoke test passed with input `1x3x380x380`, `features` `1x1792x12x12`, and seven-class head shape `[7,1792]`.
+- Fixed the safe Kaggle notebook builder packaging cell to require and include `.onnx.data` plus matching `head_v2.json`, with ZIP completeness assertions. Existing Version 12 ZIP was intentionally not treated as deployable because it omitted `.onnx.data`.
+- Verification: `PYTHONPATH=backend pytest backend/tests -q` passed 21 tests; `cd frontend && npm run build` passed; notebook builder syntax and packaging checks passed.

@@ -15,6 +15,12 @@ class Settings(BaseSettings):
     DEFAULT_TEMPERATURE: float = 1.35
     INPUT_SIZE: int = 380  # EfficientNet-B4 native resolution
     MODEL_VERSION: str = "efficientnet-b4-ham10000-v2"
+    # DermAssist v3 ensemble (ConvNeXt-V2-T + EfficientNetV2-S + EVA02-S). When
+    # checkpoints/v3/ holds model_v3.json and all member .onnx files it replaces
+    # the legacy EfficientNet-B4 model. Set USE_V3_ENSEMBLE=false to roll back.
+    USE_V3_ENSEMBLE: bool = True
+    MODEL_V3_DIR: Optional[str] = None  # default: backend/checkpoints/v3
+    ONNX_THREADS: int = 2
     
     # Groq LPU Clinical Narrative (Secret masked in __repr__)
     GROQ_API_KEY: Optional[str] = Field(default=None, repr=False)

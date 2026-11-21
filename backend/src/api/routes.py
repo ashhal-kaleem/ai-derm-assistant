@@ -120,7 +120,7 @@ async def predict_lesion(
     history_service: HistoryService = Depends(get_history_service),
 ):
     """
-        Run EfficientNet-B4 ONNX inference, temperature calibration, and occlusion-sensitivity visualization.
+        Run DermAssist v3 ensemble ONNX inference (image + age/sex/site), temperature calibration, melanoma threshold, and occlusion-sensitivity visualization.
     Conforms directly to PRD v2.0 mobile contract.
     """
     if not file.content_type or not file.content_type.startswith("image/"):
@@ -171,8 +171,16 @@ async def predict_lesion(
             },
         )
 
+    # Patient metadata feeds the v3 model (age, sex, anatomical site); missing
+    # values are encoded exactly like missing values in training.
+    model_metadata: Dict[str, Any] = {
+        "age": age if age is not None and 1 <= age <= 120 else None,
+        "sex": sex.strip().lower() if sex else None,
+        "anatomical_site": anatomical_site.strip()[:64] if anatomical_site else None,
+    }
+
     try:
-        prediction = await run_in_threadpool(inference_service.predict, image)
+        prediction = await run_in_threadpool(inference_service.predict, image, model_metadata)
     except Exception as exc:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

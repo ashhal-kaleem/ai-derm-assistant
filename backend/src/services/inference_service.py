@@ -1,7 +1,7 @@
 """Inference service coordinating ONNX runtime, calibration, and occlusion sensitivity."""
 
 import time
-from typing import Optional
+from typing import Any, Dict, Optional
 import numpy as np
 from PIL import Image
 
@@ -24,11 +24,15 @@ class InferenceService:
 
     def __init__(
         self,
-        engine: Optional[ONNXInferenceEngine] = None,
-        temperature: float = 1.0
+        engine: Optional[Any] = None,
+        temperature: float = 1.0,
+        mel_threshold: Optional[float] = None,
     ):
         self.engine = engine or ONNXInferenceEngine()
         self.temperature = max(0.1, float(temperature))
+        # Melanoma operating point chosen on the calibration split (v3: 0.34):
+        # if calibrated P(mel) >= threshold, the prediction is melanoma.
+        self.mel_threshold = float(mel_threshold) if mel_threshold is not None else None
 
     # Conservative provisional gates. These are engineering guardrails, not
     # clinically validated operating points; review/abstention is preferred to
@@ -41,12 +45,19 @@ class InferenceService:
     MAX_GREEN_UNCERTAINTY = 0.40
     BENIGN_CODES = frozenset({"bkl", "df", "nv", "vasc"})
 
-    def predict(self, image: Image.Image) -> PredictionResult:
-        """Execute full inference pipeline on a PIL RGB image."""
+    def predict(self, image: Image.Image, metadata: Optional[Dict[str, Any]] = None) -> PredictionResult:
+        """Execute full inference pipeline on a PIL RGB image (+ optional age/sex/anatomical_site)."""
         start_time = time.perf_counter()
-        
-        # 1. Forward pass via ONNX engine
-        raw_logits, activation_map = self.engine.run_inference(image)
+
+        # 1. Forward pass. The v3 ensemble exposes ensemble_logits/occlusion_map so
+        #    the heatmap explains the final (threshold-adjusted) class; legacy
+        #    engines return (logits, saliency) from run_inference.
+        is_ensemble = hasattr(self.engine, "ensemble_logits") and hasattr(self.engine, "occlusion_map")
+        if is_ensemble:
+            raw_logits = self.engine.ensemble_logits(image, metadata)
+            activation_map = None
+        else:
+            raw_logits, activation_map = self.engine.run_inference(image)
         
         # 2. Raw softmax confidence
         raw_exp = np.exp(raw_logits - np.max(raw_logits))
@@ -76,8 +87,16 @@ class InferenceService:
         
         class_prob_list.sort(key=lambda x: x.probability, reverse=True)
         top_prob = class_prob_list[0]
+        mel_idx = CLASS_NAMES.index("mel")
+        if (
+            self.mel_threshold is not None
+            and top_prob.code != "mel"
+            and calibrated_probs[mel_idx] >= self.mel_threshold
+        ):
+            top_prob = next(p for p in class_prob_list if p.code == "mel")
         top_idx = CLASS_NAMES.index(top_prob.code)
-        margin = top_prob.probability - class_prob_list[1].probability
+        runner_up = max(p.probability for p in class_prob_list if p.code != top_prob.code)
+        margin = top_prob.probability - runner_up
 
         abstention_reasons = []
         if top_prob.probability < self.MIN_ACTIONABLE_CONFIDENCE:
@@ -107,6 +126,8 @@ class InferenceService:
         
         # 6. Generate occlusion-sensitivity explainability heatmap overlay
         rgb_array = np.array(image.convert("RGB"), dtype=np.uint8)
+        if activation_map is None:
+            activation_map = self.engine.occlusion_map(image, metadata, top_idx)
         cam_2d = activation_map
             
         overlay_rgb = generate_occlusion_overlay(rgb_array, cam_2d)

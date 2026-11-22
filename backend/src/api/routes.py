@@ -420,7 +420,7 @@ async def generate_summary_endpoint(
     groq_service: GroqService = Depends(get_groq_service),
 ):
     """
-    Generate real-time doctor-ready clinical interpretation using Groq LPU (llama-3.3-70b-versatile).
+    Generate real-time doctor-ready clinical interpretation using Groq (openai/gpt-oss-120b, fallback gpt-oss-20b).
     """
     try:
         risk_level_enum = RiskLevel(payload.risk_level)

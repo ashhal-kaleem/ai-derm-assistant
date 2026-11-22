@@ -205,5 +205,5 @@ curl -s http://localhost:8000/health
 | Decision ID | Context | Options Considered | Chosen Option & Rationale | Reversal Trigger |
 |---|---|---|---|---|
 | **ADR-01** | Production Model Runtime | A: Heavy DL Framework<br>B: Dedicated ONNX Runtime | **Option B (ONNX Runtime)**: Sub-250ms CPU execution with ultra-small ~15MB install footprint. | If quantization degrades Melanoma Recall by > 1.5%. |
-| **ADR-02** | LLM Advisory Engine | A: Local LLM (Ollama)<br>B: Static Cards Only<br>C: Hybrid (Groq Llama 3.3 70B + Static Fallback) | **Option C (Hybrid)**: Delivers instant doctor-level insights with zero GPU overhead; 100% resilient if offline. | If Groq pricing introduces unexpected costs. |
+| **ADR-02** | LLM Advisory Engine | A: Local LLM (Ollama)<br>B: Static Cards Only<br>C: Hybrid (Groq gpt-oss-120b, fallback gpt-oss-20b, then static cards) | **Option C (Hybrid)**: Delivers instant doctor-level insights with zero GPU overhead; 100% resilient if offline. | If Groq pricing introduces unexpected costs. |
 | **ADR-03** | Data Persistence Engine | A: Traditional File-based Storage<br>B: Supabase (Cloud PostgreSQL + Storage) | **Option B (Supabase)**: 100% Stateless Cloud-First architecture. All scans, images, and heatmaps stored in Supabase Cloud DB and Storage buckets. | If fully offline air-gapped deployment is required. |

@@ -20,7 +20,7 @@ class GroqService:
     def __init__(
         self,
         api_key: Optional[str] = None,
-        model: str = "llama-3.3-70b-versatile",
+        model: str = "openai/gpt-oss-120b",
         timeout: float = 8.0,
     ):
         self.api_key = api_key or os.getenv("GROQ_API_KEY")
@@ -93,7 +93,8 @@ class GroqService:
             f"Write the concise 2-to-3 sentence clinical note."
         )
 
-        fallback_models = ["llama-3.1-8b-instant", "gemma2-9b-it"]
+        # gpt-oss-20b has its own free-tier quota, so it backs up the main model.
+        fallback_models = [m for m in ["openai/gpt-oss-20b"] if m != self.model]
         for model_name in [self.model] + fallback_models:
             try:
                 chat_completion = self.client.chat.completions.create(
@@ -103,7 +104,10 @@ class GroqService:
                     ],
                     model=model_name,
                     temperature=0.1,
-                    max_tokens=100
+                    # Reasoning models: keep thinking short and hidden to save tokens.
+                    reasoning_effort="low",
+                    include_reasoning=False,
+                    max_completion_tokens=400,
                 )
                 content = chat_completion.choices[0].message.content
                 if content:

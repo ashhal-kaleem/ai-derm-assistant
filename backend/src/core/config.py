@@ -19,7 +19,7 @@ class Settings(BaseSettings):
     
     # Groq LPU Clinical Narrative (Secret masked in __repr__)
     GROQ_API_KEY: Optional[str] = Field(default=None, repr=False)
-    GROQ_MODEL: str = "llama-3.3-70b-versatile"
+    GROQ_MODEL: str = "openai/gpt-oss-120b"
     GROQ_TIMEOUT_SECONDS: float = 8.0  # per request; on timeout the static summary is used
     
     # Supabase Persistence (Secret masked in __repr__)

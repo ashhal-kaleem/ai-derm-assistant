@@ -1,7 +1,5 @@
-[project]
-name = "dermassist-backend"
-version = "3.0.0"
-requires-python = ">=3.12,<3.13"
+# Vercel config only. Dependencies live in requirements.txt (runtime) and
+# requirements-dev.txt (tests); Python version in .python-version.
 
 [tool.vercel]
 # FastAPI app instance for the Vercel Python runtime.

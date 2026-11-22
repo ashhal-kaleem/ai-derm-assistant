@@ -1,0 +1,12 @@
+[project]
+name = "dermassist-backend"
+version = "3.0.0"
+requires-python = ">=3.12,<3.13"
+
+[tool.vercel]
+# FastAPI app instance for the Vercel Python runtime.
+entrypoint = "src.api.main:app"
+
+[tool.vercel.scripts]
+# Fail the build if Git LFS model files arrived as pointer files.
+build = "python scripts/check_models.py"

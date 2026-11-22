@@ -61,7 +61,7 @@ def test_image_payload_validation_magic_bytes():
     assert is_valid is False
     assert "does not match" in err
 
-    # 4. Oversized payload (> 15 MB)
+    # 4. Oversized payload (> MAX_IMAGE_FILE_SIZE)
     oversized = b"\xff\xd8\xff" + b"\x00" * (MAX_IMAGE_FILE_SIZE + 10)
     is_valid, err = validate_image_payload(oversized)
     assert is_valid is False

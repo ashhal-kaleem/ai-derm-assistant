@@ -184,3 +184,10 @@ Every task follows a strict 4-step atomic verification cycle:
 - Deploy: pinned `requirements.txt` (runtime) + `requirements-dev.txt` (pytest, httpx); Dockerfile uses `$PORT`, non-root user, HEALTHCHECK, fails the build on LFS pointer files; Render build also fails on LFS pointers; `.dockerignore` excludes `.env`. CI: `.github/workflows/backend-tests.yml` runs pytest with LFS checkout.
 - Still open: Supabase tables/bucket are publicly readable (RLS allows public SELECT, bucket public); `GET /history` lists every user's scans; lesion ids come from the lesion name; Groq model choice; hosting plan; latency.
 
+## 2026-11-22 Hosting moved to Vercel (branch production)
+- Render account was suspended; backend moves to Vercel serverless (runs only on request, Hobby plan). Fardin chose this to keep the bill as low as possible.
+- Added `backend/pyproject.toml` (`[tool.vercel] entrypoint = "src.api.main:app"`, build script `scripts/check_models.py` that fails on missing models or Git LFS pointers), `backend/vercel.json` (maxDuration 60 s, tests/scripts excluded from the function), `backend/.vercelignore`, `backend/.python-version` (3.12). Vercel project Root Directory = `backend`, Git LFS must be enabled in the Vercel project.
+- Upload cap is now 4 MB (Vercel request body limit 4.5 MB on Hobby).
+- Removed Render/Docker files: `render.yaml`, `backend/Dockerfile`, `backend/.dockerignore`, `.github/workflows/keepalive.yml` (pinging a serverless function only burns invocations).
+- Vercel Hobby limits (docs, Nov 2026): 2 GB / 1 vCPU, 300 s max duration, Python bundle 500 MB (large functions beta up to 5 GB). Cold starts reload the ~213 MB of models. Latency on 1 vCPU not measured yet.
+

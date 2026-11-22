@@ -1,0 +1,7 @@
+.env
+.env.*
+tests/
+conftest.py
+requirements-dev.txt
+__pycache__/
+*.pyc

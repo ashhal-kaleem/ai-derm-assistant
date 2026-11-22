@@ -53,13 +53,11 @@
 ai-derm-assistant/
 ├── docs/                      # Architectural specifications & PRD (SSOT)
 │   ├── PRD.md                 # Product & Business SSOT
-├── backend/                   # Render REST API, ONNX Runtime Engine & Tests
+├── backend/                   # Vercel serverless REST API (FastAPI), ONNX Runtime Engine & Tests
 │   ├── src/                   # Core ML Engine, domain entities & services
 │   ├── checkpoints/           # Trained model weights (ONNX format)
 │   ├── tests/                 # Automated test gates (leakage, calibration, inference)
 │   ├── requirements.txt       # Backend dependencies
-│   ├── Dockerfile             # Production container definition
-│   └── render.yaml            # Render service configuration
 ├── frontend/                  # Vercel Web Presentation Layer (HTML/JS Stitch UI)
 ├── notebooks/                 # EDA, training, and ablation analysis
 ├── CONTEXT.md                 # Living workspace memory & active task state

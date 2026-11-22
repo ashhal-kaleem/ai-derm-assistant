@@ -32,7 +32,7 @@ class Settings(BaseSettings):
     ENABLE_DOCS: bool = False  # Lock OpenAPI/Swagger docs in production unless explicitly enabled
     ADMIN_API_KEY: Optional[str] = Field(default=None, repr=False)  # Secret key for admin routes
     FORCE_HTTPS: bool = True  # Enforce HTTPS redirection in production behind proxies
-    MAX_UPLOAD_SIZE_MB: int = 15  # Max upload size in megabytes (DoS guard)
+    MAX_UPLOAD_SIZE_MB: int = 4  # Vercel request body limit is 4.5 MB
 
     # Load protection (one 512 MB instance: one prediction at a time)
     MAX_CONCURRENT_PREDICTIONS: int = 1

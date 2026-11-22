@@ -177,7 +177,7 @@ class SecurityAuditRunner:
         from src.core.security import validate_image_payload, MAX_IMAGE_FILE_SIZE
         import PIL.Image
         self.check("Pillow Decompression Bomb protection active (MAX_IMAGE_PIXELS capped)", PIL.Image.MAX_IMAGE_PIXELS <= 25_000_000)
-        self.check("Image upload size capped at 15 MB", MAX_IMAGE_FILE_SIZE == 15 * 1024 * 1024)
+        self.check("Image upload size capped at 4 MB", MAX_IMAGE_FILE_SIZE == 4 * 1024 * 1024)
         is_val, _ = validate_image_payload(b"non-image-binary-payload")
         self.check("Magic byte verification rejects non-image payload", is_val is False)
 

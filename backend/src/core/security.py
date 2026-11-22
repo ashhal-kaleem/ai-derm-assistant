@@ -9,8 +9,8 @@ import hmac
 from typing import Optional, Tuple
 from PIL import Image
 
-# 15 MB maximum upload size to protect against Denial of Service (DoS) memory exhaustion
-MAX_IMAGE_FILE_SIZE = 15 * 1024 * 1024
+# 4 MB maximum upload size: fits Vercel's 4.5 MB request body limit and guards memory
+MAX_IMAGE_FILE_SIZE = 4 * 1024 * 1024
 
 # Pillow Decompression Bomb protection cap
 Image.MAX_IMAGE_PIXELS = 25_000_000

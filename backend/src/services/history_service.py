@@ -6,7 +6,6 @@ import os
 import uuid
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
-from src.core.config import get_settings
 from src.domain.models import PredictionResult, ScanRecord
 from src.infrastructure.supabase_client import SupabaseCloudClient
 
@@ -16,10 +15,9 @@ def _active_model_versions():
     try:
         from src.api.dependencies import get_onnx_engine
         engine = get_onnx_engine()
-        mv = getattr(engine, "model_version", None) or get_settings().MODEL_VERSION
-        return mv, getattr(engine, "head_version", "unknown")
+        return engine.model_version, engine.head_version
     except Exception:
-        return get_settings().MODEL_VERSION, "unknown"
+        return "unknown", "unknown"
 
 
 class HistoryService:

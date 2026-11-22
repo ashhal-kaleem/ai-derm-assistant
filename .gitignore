@@ -43,7 +43,3 @@ secrets/
 *.bak
 backups/*.json.gz
 !backups/.gitkeep
-
-# DermAssist v3 ensemble weights (~280 MB): hosted outside git
-backend/checkpoints/v3/*.onnx
-backend/checkpoints/v3/*.data

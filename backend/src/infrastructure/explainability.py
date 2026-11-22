@@ -55,10 +55,6 @@ def generate_occlusion_overlay(
     return np.clip(blended, 0, 255).astype(np.uint8)
 
 
-# Backward-compatible import for clients built against the old name.
-generate_gradcam_overlay = generate_occlusion_overlay
-
-
 
 def image_to_png_bytes(image_np: np.ndarray) -> bytes:
     """Encode an RGB uint8 image array to PNG byte stream."""

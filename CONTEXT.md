@@ -11,7 +11,7 @@
 ## 🧭 1. Project Snapshot & Runtime State
 - **Core Purpose:** Calibrated, explainable, ultra-lightweight skin lesion diagnostic assistant with zero patient leakage and sub-250ms ONNX inference.
 - **Current Honest State:** Phase 4 completed (Decoupled Vercel Frontend + Render Backend, 19 tests verified exit code 0).
-- **Active Working Branch:** `main`
+- **Active Working Branch:** `Dev` (contributions go via fork + PR to `main`)
 - **Local Dev Environment:**
   | Service | Host / Port | Status | Verification Command |
   |---|---|---|---|
@@ -33,7 +33,8 @@ Canonical project nouns to eliminate semantic drift, schema naming bugs, and LLM
 - **Image**: Specific photographic record identified by `image_id` (a single lesion can have multiple images).
 - **Diagnosis**: 7 canonical classes (`akiec`, `bcc`, `bkl`, `df`, `mel`, `nv`, `vasc`).
 - **Temperature ($T^*$)**: Scalar parameter for probability calibration.
-- **Grad-CAM**: Gradient-weighted Class Activation Mapping saliency heatmap.
+- **Occlusion map**: saliency heatmap from masking 4x4 image patches on the EfficientNetV2-S member.
+- **v3 ensemble**: production model (ConvNeXt-V2-T, EfficientNetV2-S, EVA02-S) with metadata, T=0.5973, melanoma threshold 0.34.
 
 ---
 
@@ -162,3 +163,10 @@ Every task follows a strict 4-step atomic verification cycle:
 - Feature 1 (Skin Detection in Monitoring Mode): Implemented multi-phototype (Fitzpatrick I-VI) YCrCb + HSV skin chromophore detection in `quality_service.py`. Records `skin_detected` and `skin_fraction` in quality telemetry without altering image acceptance decisions (zero false rejections).
 - Feature 2 (Patient Metadata Integration): Added optional clinical context fields (`age`, `sex`, `anatomical_site`, `history_of_melanoma`) in `/predict`, request schemas, and frontend `ScanScreen.jsx` collapsible accordion. Formatted into Groq prompt under segregated `Patient-Reported Context` with explicit rule forbidding model risk/prediction overrides. Missing metadata preserves baseline behavior with zero PII logging or persistence.
 - Verification: Added `test_skin_detection.py` (5 tests) and `test_patient_metadata.py` (4 tests); full test suite passed 40/40 tests (exit code 0); frontend lint passed with 0 errors; production build succeeded in 1.13s (exit code 0).
+
+## 2026-11-21 v3 Ensemble Rebuild (branch Dev)
+- Replaced the EfficientNet-B4 model with the v3 three-model ensemble (ConvNeXt-V2-T@384, EfficientNetV2-S@384, EVA02-S@336), each using image + 19 metadata features. Weights in `backend/checkpoints/v3/` (Git LFS), config `model_v3.json`, training/export code in `training/v3/`.
+- v3 test split (1,975 images, lesion-disjoint): accuracy 85.6%, balanced accuracy 75.8%, macro F1 0.772, melanoma recall 85.3% at threshold 0.34, ECE 2.9%, malignant AUC 0.950.
+- Removed the legacy engine, `efficientnet_b4_ham10000.onnx`, `head_v2.json`, old training notebooks and core re-export shims.
+- Verification: backend output matches training logits on 21 test images (21/21 same class, max logit diff 0.005).
+- Known gap: ~7.4 s per prediction on 2 CPU cores and ~795 MB peak RAM (Render limit 512 MB). Speed/RAM work in progress.

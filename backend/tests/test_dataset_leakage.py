@@ -3,7 +3,7 @@
 import pandas as pd
 import pytest
 
-from src.core.dataset import (
+from src.domain.dataset import (
     create_patient_aware_split,
     verify_zero_patient_leakage,
 )

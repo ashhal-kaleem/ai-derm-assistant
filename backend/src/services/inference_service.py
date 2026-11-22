@@ -10,7 +10,7 @@ from src.infrastructure.explainability import (
     generate_occlusion_overlay,
     image_to_png_bytes,
 )
-from src.infrastructure.onnx_engine import ONNXInferenceEngine
+from src.infrastructure.ensemble_engine import V3EnsembleEngine
 from src.domain.models import (
     CLASS_NAMES,
     DIAGNOSIS_CATALOG,
@@ -28,7 +28,7 @@ class InferenceService:
         temperature: float = 1.0,
         mel_threshold: Optional[float] = None,
     ):
-        self.engine = engine or ONNXInferenceEngine()
+        self.engine = engine or V3EnsembleEngine()
         self.temperature = max(0.1, float(temperature))
         # Melanoma operating point chosen on the calibration split (v3: 0.34):
         # if calibrated P(mel) >= threshold, the prediction is melanoma.
@@ -49,15 +49,8 @@ class InferenceService:
         """Execute full inference pipeline on a PIL RGB image (+ optional age/sex/anatomical_site)."""
         start_time = time.perf_counter()
 
-        # 1. Forward pass. The v3 ensemble exposes ensemble_logits/occlusion_map so
-        #    the heatmap explains the final (threshold-adjusted) class; legacy
-        #    engines return (logits, saliency) from run_inference.
-        is_ensemble = hasattr(self.engine, "ensemble_logits") and hasattr(self.engine, "occlusion_map")
-        if is_ensemble:
-            raw_logits = self.engine.ensemble_logits(image, metadata)
-            activation_map = None
-        else:
-            raw_logits, activation_map = self.engine.run_inference(image)
+        # 1. Forward pass: v3 ensemble log-probabilities (image + patient metadata)
+        raw_logits = self.engine.ensemble_logits(image, metadata)
         
         # 2. Raw softmax confidence
         raw_exp = np.exp(raw_logits - np.max(raw_logits))
@@ -126,11 +119,8 @@ class InferenceService:
         
         # 6. Generate occlusion-sensitivity explainability heatmap overlay
         rgb_array = np.array(image.convert("RGB"), dtype=np.uint8)
-        if activation_map is None:
-            activation_map = self.engine.occlusion_map(image, metadata, top_idx)
-        cam_2d = activation_map
-            
-        overlay_rgb = generate_occlusion_overlay(rgb_array, cam_2d)
+        activation_map = self.engine.occlusion_map(image, metadata, top_idx)
+        overlay_rgb = generate_occlusion_overlay(rgb_array, activation_map)
         heatmap_png = image_to_png_bytes(overlay_rgb)
         
         return PredictionResult(

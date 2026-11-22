@@ -21,7 +21,7 @@ Skin cancers (melanoma, basal cell carcinoma) are among the most common malignan
 
 ### 1.3 Target Audience & Primary ICP
 - **Primary ICP**: Triage medical students, general practitioners, teledermatology clinics, and health-conscious individuals seeking educational pre-screening.
-- **Core Value Differentiator**: Patient-aware honesty (leakage-free evaluation), calibrated probabilities via Temperature Scaling, epistemic uncertainty flagging via Monte Carlo Dropout, visual Grad-CAM transparency, and dynamic Groq-powered patient reports—running on ultra-fast ONNX runtime with zero infrastructure costs.
+- **Core Value Differentiator**: Patient-aware honesty (leakage-free evaluation), calibrated probabilities via Temperature Scaling, epistemic uncertainty flagging via Monte Carlo Dropout, visual occlusion-heatmap transparency, and dynamic Groq-powered patient reports—running on ultra-fast ONNX runtime with zero infrastructure costs.
 
 ### 1.4 Goals & Measurable Success Metrics (KPIs)
 
@@ -67,7 +67,7 @@ Skin cancers (melanoma, basal cell carcinoma) are among the most common malignan
 |---|---|---|---|---|
 | **F-01** | Image Ingestion & Validation | `P0` | User uploads a skin lesion image (drag-and-drop or file selector) with dimension and format validation. | `[ ] Unverified` |
 | **F-02** | Calibrated 7-Class Prediction | `P0` | System returns primary diagnostic prediction with temperature-calibrated confidence score. | `[ ] Unverified` |
-| **F-03** | Grad-CAM Saliency Overlay | `P0` | User views side-by-side original image and Grad-CAM attention heatmap highlighting active regions. | `[ ] Unverified` |
+| **F-03** | Occlusion Saliency Overlay | `P0` | User views side-by-side original image and occlusion heatmap highlighting active regions. | `[ ] Unverified` |
 | **F-04** | Static Knowledge Card & Disclaimer | `P0` | System displays permanent, unclosable medical disclaimer and structured clinical overview for predicted class. | `[ ] Unverified` |
 | **F-05** | ONNX Runtime Acceleration | `P0` | Inference executes in < 250ms on CPU using quantized/optimized ONNX model weights. | `[ ] Unverified` |
 | **F-06** | Groq Clinical Advisory Report | `P1` | System generates a structured patient summary and recommended next steps via Groq LPU (llama-3.3-70b-versatile). | `[ ] Unverified` |
@@ -84,8 +84,8 @@ Skin cancers (melanoma, basal cell carcinoma) are among the most common malignan
 - **Preconditions**: Web app is running; model weights are loaded.
 - **Step-by-Step Flow**:
   1. User navigates to application and uploads `ISIC_0024306.jpg`.
-  2. System validates format, rescales image to 380×380, and runs ONNX inference pipeline.
-  3. System generates Grad-CAM heatmap from final convolutional features.
+  2. System validates format, applies shades-of-gray color constancy, resizes per model (384/336), and runs the v3 ONNX ensemble with patient metadata.
+  3. System generates an occlusion-sensitivity heatmap for the predicted class.
   4. UI renders:
      - Predicted Condition with Risk Badge (e.g., "Melanoma — MALIGNANT").
      - Calibrated Confidence Bar (e.g., "87.4%").
@@ -95,7 +95,7 @@ Skin cancers (melanoma, basal cell carcinoma) are among the most common malignan
   - **Scenario A (Happy Path)**:
     - **Given** a valid JPG dermoscopic image under 10 MB,
     - **When** the user submits the image for analysis,
-    - **Then** the prediction, calibrated confidence, Grad-CAM overlay, and medical disclaimer are displayed in under 500 ms total render time.
+    - **Then** the prediction, calibrated confidence, heatmap overlay, and medical disclaimer are displayed in under 500 ms total render time.
   - **Scenario B (Corrupted / Invalid Input)**:
     - **Given** an invalid text file renamed to `.jpg` or corrupted image binary,
     - **When** the user attempts upload,

@@ -8,17 +8,9 @@ class Settings(BaseSettings):
     """Centralized Application Configuration (Single Source of Truth)."""
     
     # Model & Inference
-    MODEL_PATH: str = "checkpoints/efficientnet_b4_ham10000.onnx"
-    # Non-unit safety fallback for the currently deployed legacy head. New
-    # retrained heads persist their validated temperature in head_v2.json and
-    # take precedence in dependency wiring.
-    DEFAULT_TEMPERATURE: float = 1.35
-    INPUT_SIZE: int = 380  # EfficientNet-B4 native resolution
-    MODEL_VERSION: str = "efficientnet-b4-ham10000-v2"
-    # DermAssist v3 ensemble (ConvNeXt-V2-T + EfficientNetV2-S + EVA02-S). When
-    # checkpoints/v3/ holds model_v3.json and all member .onnx files it replaces
-    # the legacy EfficientNet-B4 model. Set USE_V3_ENSEMBLE=false to roll back.
-    USE_V3_ENSEMBLE: bool = True
+    # DermAssist v3 ensemble (ConvNeXt-V2-T + EfficientNetV2-S + EVA02-S).
+    # checkpoints/v3/ holds model_v3.json (classes, preprocessing, temperature,
+    # melanoma threshold) and the member .onnx files.
     MODEL_V3_DIR: Optional[str] = None  # default: backend/checkpoints/v3
     ONNX_THREADS: int = 2
     

@@ -149,7 +149,7 @@ async def predict_lesion(
         raw_img.draft("RGB", (MAX_IMAGE_SIDE, MAX_IMAGE_SIDE))
         image = ImageOps.exif_transpose(raw_img)
         # Phone photos (12MP+) blow past the 512 MB Render limit during the
-        # full-resolution heatmap overlay. The model only sees 380x380, so
+        # full-resolution heatmap overlay. The v3 models resize to 448 first, so
         # cap the working image size; predictions are unaffected.
         image.thumbnail((MAX_IMAGE_SIDE, MAX_IMAGE_SIDE), Image.Resampling.BILINEAR)
     except Exception as exc:

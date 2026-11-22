@@ -7,13 +7,3 @@ from src.core.exceptions import (
     ResourceNotFoundError,
     register_exception_handlers,
 )
-
-# Backward-compatibility aliases for domain & infrastructure
-from src.domain.calibration import (
-    compute_ece,
-    optimize_temperature,
-    apply_temperature_scaling,
-)
-from src.domain.dataset import create_patient_aware_split, verify_zero_patient_leakage
-from src.infrastructure.onnx_engine import ONNXInferenceEngine
-from src.infrastructure.explainability import generate_gradcam_overlay, image_to_png_bytes

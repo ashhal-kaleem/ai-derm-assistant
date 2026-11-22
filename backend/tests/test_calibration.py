@@ -3,7 +3,7 @@
 import numpy as np
 import pytest
 
-from src.core.calibration import (
+from src.domain.calibration import (
     apply_temperature_scaling,
     compute_ece,
     optimize_temperature,

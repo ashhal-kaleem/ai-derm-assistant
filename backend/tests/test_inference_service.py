@@ -4,7 +4,6 @@ import numpy as np
 from PIL import Image
 import pytest
 
-from src.infrastructure.onnx_engine import ONNXInferenceEngine
 from src.domain.models import CLASS_NAMES, RiskLevel
 from src.services.inference_service import InferenceService
 
@@ -13,8 +12,11 @@ class _FixedEngine:
     def __init__(self, probabilities):
         self.logits = np.log(np.asarray(probabilities, dtype=np.float32))
 
-    def run_inference(self, image):
-        return self.logits, np.zeros((4, 4), dtype=np.float32)
+    def ensemble_logits(self, image, metadata=None):
+        return self.logits
+
+    def occlusion_map(self, image, metadata, target_idx):
+        return np.zeros((4, 4), dtype=np.float32)
 
 
 def _predict_with_probabilities(probabilities):

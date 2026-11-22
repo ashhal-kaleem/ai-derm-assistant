@@ -3,7 +3,6 @@ from typing import Optional
 from fastapi import Header, HTTPException, status
 from src.core.config import get_settings
 from src.core.security import verify_admin_key
-from src.infrastructure.onnx_engine import ONNXInferenceEngine
 from src.infrastructure.ensemble_engine import V3EnsembleEngine
 from src.infrastructure.supabase_client import SupabaseCloudClient
 from src.services.feedback_service import FeedbackService
@@ -28,29 +27,22 @@ def verify_admin_access(x_admin_key: Optional[str] = Header(None, alias="X-Admin
 
 @lru_cache()
 def get_onnx_engine():
-    """v3 ensemble when its files are present (default), else the legacy EfficientNet-B4."""
+    """DermAssist v3 ensemble engine (single production model)."""
     settings = get_settings()
-    if settings.USE_V3_ENSEMBLE:
-        engine = V3EnsembleEngine(model_dir=settings.MODEL_V3_DIR, threads=settings.ONNX_THREADS)
-        if engine.loaded:
-            return engine
-    return ONNXInferenceEngine(model_path=settings.MODEL_PATH)
+    return V3EnsembleEngine(model_dir=settings.MODEL_V3_DIR, threads=settings.ONNX_THREADS)
 
 
 def get_model_version() -> str:
-    engine = get_onnx_engine()
-    return getattr(engine, "model_version", None) or get_settings().MODEL_VERSION
+    return get_onnx_engine().model_version
 
 
 @lru_cache()
 def get_inference_service() -> InferenceService:
-    settings = get_settings()
     engine = get_onnx_engine()
-    temperature = engine.calibration_temperature or settings.DEFAULT_TEMPERATURE
     return InferenceService(
         engine=engine,
-        temperature=temperature,
-        mel_threshold=getattr(engine, "mel_threshold", None),
+        temperature=engine.calibration_temperature,
+        mel_threshold=engine.mel_threshold,
     )
 
 

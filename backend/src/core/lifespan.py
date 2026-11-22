@@ -15,10 +15,10 @@ async def lifespan(app: FastAPI):
     settings = get_settings()
     logger.info("Initializing DermAssist AI Engine...")
     
-    # Warmup ONNX engine with synthetic 224x224 input
+    # Warm up the v3 ensemble with a synthetic image
     try:
         service = get_inference_service()
-        dummy_img = Image.new("RGB", (settings.INPUT_SIZE, settings.INPUT_SIZE), color=(128, 128, 128))
+        dummy_img = Image.new("RGB", (448, 448), color=(128, 128, 128))
         service.predict(dummy_img)
         logger.info(f"Inference engine pre-warmed successfully: {type(service.engine).__name__}")
     except Exception as exc:

@@ -28,9 +28,9 @@ DermAssist AI separates training, model serving, database persistence, and prese
             ▼                       ▼                       ▼
 ┌──────────────────────┐  ┌──────────────────┐  ┌──────────────────────┐
 │  CORE DOMAIN ENGINE  │  │ EXTERNAL ADAPTER │  │ INFRASTRUCTURE LAYER │
-│ • ONNX Inference     │  │ • Groq LPU API │  │ • ScanRepository     │
+│ • v3 ONNX Ensemble   │  │ • Groq LPU API │  │ • ScanRepository     │
 │ • Temperature Scaling│  │ • Static Cards   │  │ • Supabase Cloud DB  │
-│ • Grad-CAM Heatmaps  │  └──────────────────┘  │ • Supabase Storage   │
+│ • Occlusion Heatmaps │  └──────────────────┘  │ • Supabase Storage   │
 │ • 7-Class Vocabulary │                        └──────────────────────┘
 └──────────────────────┘
 ```
@@ -43,15 +43,15 @@ sequenceDiagram
     participant UI as Streamlit Web App
     participant IS as InferenceService
     participant OE as ONNX Inference Engine
-    participant GC as Grad-CAM Engine
+    participant GC as Occlusion Map (EffNetV2-S)
     participant GS as GroqService
     participant DB as ScanRepository
 
     User->>UI: Uploads Lesion Image (JPG/PNG)
     UI->>IS: analyze_lesion(image_bytes, enable_gemini=True)
-    IS->>OE: run_inference(preprocessed_tensor)
-    OE-->>IS: raw_logits, probabilities
-    IS->>IS: apply_temperature_scaling(logits, T=1.35)
+    IS->>OE: ensemble_logits(image, age/sex/site)
+    OE-->>IS: ensemble log-probabilities (3 models x 4 TTA views)
+    IS->>IS: apply_temperature_scaling(logits, T=0.5973) + melanoma threshold 0.34
     IS->>GC: generate_saliency(image, top_class)
     GC-->>IS: heatmap_overlay_image
     alt Groq Key Present
@@ -93,7 +93,7 @@ sequenceDiagram
 |---|---|---|---|
 | **Language Runtime** | Python | `3.10+` | Lightweight runtime for ONNX, OpenCV, and scientific packages |
 | **Inference Engine** | `onnxruntime` | `^1.17.0` | Ultra-fast CPU inference (< 250ms), lightweight (~15MB install) |
-| **Model Artifact** | Pretrained EfficientNet-B4 (ONNX) | ONNX v1.17 | Quantized/optimized model weights, zero local training required |
+| **Model Artifact** | DermAssist v3 ensemble: ConvNeXt-V2-T@384, EfficientNetV2-S@384, EVA02-S@336 (ONNX, Git LFS) | opset 17 | Image + patient metadata; config in `checkpoints/v3/model_v3.json`; training code in `training/v3/` |
 | **Explainability (XAI)** | OpenCV & NumPy (`opencv-python-headless`) | `^4.8.0` | Saliency overlay & heatmap blending |
 | **Clinical Intelligence**| Groq LPU API (`groq`) | `^0.1.1` | Free-tier Groq Llama 3.3 70B for structured patient advice |
 | **Cloud Database** | Supabase (`supabase-py`) | Cloud Serverless | Cloud-hosted PostgreSQL, zero local database storage |
@@ -157,17 +157,17 @@ src/
 │   ├── models.py                # PredictionResult, DiagnosisClass, ScanRecord dataclasses
 │   └── knowledge_cards.py       # 7-Class static clinical cards & permanent disclaimers
 ├── core/                        # Mathematical & Algorithmic Engines
-│   ├── dataset.py               # HAM10000Dataset with StratifiedGroupKFold split logic
-│   ├── onnx_engine.py           # ONNX Runtime session & tensor pre/post-processing
-│   ├── calibration.py           # Temperature scaling solver & ECE computation
-│   ├── uncertainty.py           # Monte Carlo Dropout predictive entropy engine
-│   └── explainability.py        # Grad-CAM heatmap extraction
+│   ├── config.py                # Settings (MODEL_V3_DIR, ONNX_THREADS, secrets)
+│   ├── lifespan.py              # Startup warm-up of the v3 ensemble
+│   └── security.py              # Admin key + hashing helpers
 ├── services/                    # Application Orchestration
 │   ├── inference_service.py     # Main facade coordinating preprocessing, ONNX, and CAM
 │   ├── groq_service.py        # Groq Llama 3.3 70B client with retry and fallback
 │   └── history_service.py       # Scan repository management
 └── infrastructure/              # External Adapters
-    ├── onnx_engine.py           # ONNX Runtime session & fast tensor processing
+    ├── ensemble_engine.py       # V3EnsembleEngine: 3 ONNX members, TTA, occlusion map
+    ├── v3_preprocess.py         # Shades-of-gray, resize, TTA views, metadata vector
+    ├── explainability.py        # Occlusion heatmap overlay
     └── supabase_repo.py         # Supabase Database & Storage Cloud Repository
 ```
 
@@ -181,8 +181,8 @@ src/
 | `GROQ_API_KEY` | Optional | `None` | Groq API key for dynamic clinical summaries |
 | `SUPABASE_URL` | Required | `https://xyz.supabase.co` | Supabase Cloud Project URL |
 | `SUPABASE_KEY` | Required | `eyJ...` | Supabase Anon/Service API Key |
-| `HF_MODEL_REPO` | Optional | `None` | HuggingFace Hub repo ID for streaming ONNX model weights |
-| `MODEL_PATH` | Optional | `checkpoints/efficientnet_b4.onnx`| Path to optimized ONNX model weights |
+| `MODEL_V3_DIR` | Optional | `backend/checkpoints/v3` | Folder with `model_v3.json` and the 3 member `.onnx` files |
+| `ONNX_THREADS` | Optional | `2` | ONNX Runtime threads per member |
 | `APP_PORT` | Optional | `8501` | Streamlit server port |
 
 ### 6.2 Operational Healthcheck Probe

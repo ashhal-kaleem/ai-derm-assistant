@@ -20,7 +20,7 @@ async def lifespan(app: FastAPI):
         service = get_inference_service()
         dummy_img = Image.new("RGB", (settings.INPUT_SIZE, settings.INPUT_SIZE), color=(128, 128, 128))
         service.predict(dummy_img)
-        logger.info(f"ONNX Model pre-warmed successfully: {settings.MODEL_PATH}")
+        logger.info(f"Inference engine pre-warmed successfully: {type(service.engine).__name__}")
     except Exception as exc:
         logger.warning(f"ONNX Model pre-warmup warning (non-fatal): {exc}")
     

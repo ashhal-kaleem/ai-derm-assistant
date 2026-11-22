@@ -11,6 +11,17 @@ from src.domain.models import PredictionResult, ScanRecord
 from src.infrastructure.supabase_client import SupabaseCloudClient
 
 
+def _active_model_versions():
+    """(model_version, config hash) of the engine actually serving predictions."""
+    try:
+        from src.api.dependencies import get_onnx_engine
+        engine = get_onnx_engine()
+        mv = getattr(engine, "model_version", None) or get_settings().MODEL_VERSION
+        return mv, getattr(engine, "head_version", "unknown")
+    except Exception:
+        return get_settings().MODEL_VERSION, "unknown"
+
+
 class HistoryService:
     """Orchestrates cloud scan record storage and retrieval."""
 
@@ -26,11 +37,7 @@ class HistoryService:
         heatmap_bytes: Optional[bytes] = None
     ) -> ScanRecord:
         """Upload media to Supabase storage and persist scan record in PostgreSQL."""
-        head_path = os.path.join(os.path.dirname(__file__), "..", "..", "checkpoints", "head_v2.json")
-        head_version = "base-head"
-        if os.path.exists(head_path):
-            with open(head_path, "rb") as handle:
-                head_version = hashlib.sha256(handle.read()).hexdigest()[:16]
+        model_version, head_version = _active_model_versions()
         record = ScanRecord(
             predicted_class=prediction.top_class,
             raw_confidence=prediction.raw_confidence,
@@ -41,7 +48,7 @@ class HistoryService:
             clinical_summary=prediction.clinical_summary or prediction.gemini_summary,
             gemini_summary=prediction.clinical_summary or prediction.gemini_summary,
             image_sha256=hashlib.sha256(image_bytes).hexdigest(),
-            model_version=get_settings().MODEL_VERSION,
+            model_version=model_version,
             head_version=head_version,
             routing_zone=prediction.routing_zone,
             inference_ms=prediction.inference_ms,

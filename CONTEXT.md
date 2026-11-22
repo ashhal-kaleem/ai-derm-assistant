@@ -166,7 +166,8 @@ Every task follows a strict 4-step atomic verification cycle:
 
 ## 2026-11-21 v3 Ensemble Rebuild (branch Dev)
 - Replaced the EfficientNet-B4 model with the v3 three-model ensemble (ConvNeXt-V2-T@384, EfficientNetV2-S@384, EVA02-S@336), each using image + 19 metadata features. Weights in `backend/checkpoints/v3/` (Git LFS), config `model_v3.json`, training/export code in `training/v3/`.
-- v3 test split (1,975 images, lesion-disjoint): accuracy 85.6%, balanced accuracy 75.8%, macro F1 0.772, melanoma recall 85.3% at threshold 0.34, ECE 2.9%, malignant AUC 0.950.
+- v3 test split (1,975 images, lesion-disjoint). With the 0.34 melanoma threshold (what the backend serves): accuracy 83.6%, balanced accuracy 74.9%, macro F1 0.758, melanoma recall 85.3%, malignant AUC 0.950. Without the threshold (plain argmax): accuracy 85.6%, balanced accuracy 75.8%, macro F1 0.772.
 - Removed the legacy engine, `efficientnet_b4_ham10000.onnx`, `head_v2.json`, old training notebooks and core re-export shims.
 - Verification: backend output matches training logits on 21 test images (21/21 same class, max logit diff 0.005).
-- Known gap: ~7.4 s per prediction on 2 CPU cores and ~795 MB peak RAM (Render limit 512 MB). Speed/RAM work in progress.
+- EVA02-S now runs as dynamic INT8 (`eva02_small_int8.onnx`, made by `training/v3/quantize_onnx.py`); ConvNeXt and EffNet stay fp32. Each TTA view runs as its own ONNX call. Full test re-run of the backend config (EVA02 INT8, 4 views): accuracy 83.6%, balanced accuracy 75.4%, macro F1 0.762, melanoma recall 85.3%, AUC 0.950 (no loss vs fp32).
+- Measured on 2 CPU cores: peak RAM 439 MB (was 795 MB, Render limit 512 MB); ~6.4 s per prediction including the 4x4 occlusion heatmap (~3.1 s model, ~3.3 s heatmap). The 500 ms target is not met; latency work is still open.

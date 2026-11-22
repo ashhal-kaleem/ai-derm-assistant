@@ -61,6 +61,7 @@ class V3EnsembleEngine:
         opts.intra_op_num_threads = threads
         opts.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
         opts.enable_cpu_mem_arena = False
+        opts.enable_mem_pattern = False  # lower peak RAM (Render 512 MB)
         for member in self.config["members"]:
             path = os.path.join(self.model_dir, member["file"])
             if not os.path.exists(path):
@@ -74,8 +75,14 @@ class V3EnsembleEngine:
         return bool(self.sessions) and len(self.sessions) == len(self.config.get("members", []))
 
     def _member_logits(self, name: str, image_batch: np.ndarray, meta: np.ndarray) -> np.ndarray:
-        meta_b = np.repeat(meta, image_batch.shape[0], axis=0)
-        return self.sessions[name].run(None, {"image": image_batch, "meta": meta_b})[0]
+        # One image per run: same logits as a batched run, but far lower peak RAM
+        # (measured 626 MB -> 399 MB for the 3 members with 4 TTA views).
+        session = self.sessions[name]
+        out = [
+            session.run(None, {"image": np.ascontiguousarray(image_batch[i:i + 1]), "meta": meta})[0]
+            for i in range(image_batch.shape[0])
+        ]
+        return np.concatenate(out, axis=0)
 
     def ensemble_logits(self, image: Image.Image, metadata: Optional[Dict[str, Any]] = None) -> np.ndarray:
         if not self.loaded:

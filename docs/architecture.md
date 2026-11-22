@@ -92,8 +92,8 @@ sequenceDiagram
 | Layer | Technology | Version | Rationale |
 |---|---|---|---|
 | **Language Runtime** | Python | `3.10+` | Lightweight runtime for ONNX, OpenCV, and scientific packages |
-| **Inference Engine** | `onnxruntime` | `^1.17.0` | Ultra-fast CPU inference (< 250ms), lightweight (~15MB install) |
-| **Model Artifact** | DermAssist v3 ensemble: ConvNeXt-V2-T@384, EfficientNetV2-S@384, EVA02-S@336 (ONNX, Git LFS) | opset 17 | Image + patient metadata; config in `checkpoints/v3/model_v3.json`; training code in `training/v3/` |
+| **Inference Engine** | `onnxruntime` | `^1.17.0` | CPU inference; v3 measured ~6.4 s per prediction with heatmap on 2 cores, peak RAM 439 MB |
+| **Model Artifact** | DermAssist v3 ensemble: ConvNeXt-V2-T@384, EfficientNetV2-S@384, EVA02-S@336 (ONNX, Git LFS; EVA02 dynamic INT8, others fp32) | opset 17 | Image + patient metadata; config in `checkpoints/v3/model_v3.json`; training code in `training/v3/` |
 | **Explainability (XAI)** | OpenCV & NumPy (`opencv-python-headless`) | `^4.8.0` | Saliency overlay & heatmap blending |
 | **Clinical Intelligence**| Groq LPU API (`groq`) | `^0.1.1` | Free-tier Groq Llama 3.3 70B for structured patient advice |
 | **Cloud Database** | Supabase (`supabase-py`) | Cloud Serverless | Cloud-hosted PostgreSQL, zero local database storage |

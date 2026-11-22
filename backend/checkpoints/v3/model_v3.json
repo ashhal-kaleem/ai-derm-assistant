@@ -1,96 +1,110 @@
 {
-  "model_version": "dermassist-v3-ensemble",
-  "classes": [
-    "akiec",
-    "bcc",
-    "bkl",
-    "df",
-    "mel",
-    "nv",
-    "vasc"
-  ],
-  "members": [
-    {
-      "name": "convnextv2_tiny",
-      "file": "convnextv2_tiny.onnx",
-      "timm": "convnextv2_tiny.fcmae_ft_in22k_in1k_384",
-      "input_size": 384
-    },
-    {
-      "name": "effnetv2_s",
-      "file": "effnetv2_s.onnx",
-      "timm": "tf_efficientnetv2_s.in21k_ft_in1k",
-      "input_size": 384
-    },
-    {
-      "name": "eva02_small",
-      "file": "eva02_small.onnx",
-      "timm": "eva02_small_patch14_336.mim_in22k_ft_in1k",
-      "input_size": 336
-    }
-  ],
-  "preprocess": {
-    "pre_resize": 448,
-    "pre_resample": "bicubic",
-    "color_constancy": "shades_of_gray",
-    "sog_power": 6,
-    "resample": "bilinear",
-    "mean": [
-      0.485,
-      0.456,
-      0.406
-    ],
-    "std": [
-      0.229,
-      0.224,
-      0.225
-    ]
+ "model_version": "dermassist-v3-ensemble",
+ "classes": [
+  "akiec",
+  "bcc",
+  "bkl",
+  "df",
+  "mel",
+  "nv",
+  "vasc"
+ ],
+ "members": [
+  {
+   "name": "convnextv2_tiny",
+   "file": "convnextv2_tiny.onnx",
+   "timm": "convnextv2_tiny.fcmae_ft_in22k_in1k_384",
+   "input_size": 384,
+   "precision": "fp32"
   },
-  "tta": [
-    "identity",
-    "hflip",
-    "vflip",
-    "transpose"
-  ],
-  "ensemble": "mean_softmax_then_log",
-  "temperature": 0.5972704769129323,
-  "mel_threshold": 0.33999999999999997,
-  "meta_schema": {
-    "localizations": [
-      "abdomen",
-      "acral",
-      "back",
-      "chest",
-      "ear",
-      "face",
-      "foot",
-      "genital",
-      "hand",
-      "lower extremity",
-      "neck",
-      "scalp",
-      "trunk",
-      "unknown",
-      "upper extremity"
-    ],
-    "meta_dim": 19,
-    "age_scale": 90.0,
-    "sex": [
-      "male",
-      "female"
-    ]
+  {
+   "name": "effnetv2_s",
+   "file": "effnetv2_s.onnx",
+   "timm": "tf_efficientnetv2_s.in21k_ft_in1k",
+   "input_size": 384,
+   "precision": "fp32"
   },
-  "occlusion": {
-    "member": "effnetv2_s",
-    "grid": 4
-  },
-  "validated_test_metrics": {
-    "n_test": 1975,
-    "accuracy": 0.8557,
-    "balanced_accuracy": 0.758,
-    "macro_f1": 0.7722,
-    "ece": 0.0289,
-    "mel_recall_at_threshold": 0.8534,
-    "malignant_auc": 0.9502
+  {
+   "name": "eva02_small",
+   "file": "eva02_small_int8.onnx",
+   "timm": "eva02_small_patch14_336.mim_in22k_ft_in1k",
+   "input_size": 336,
+   "precision": "int8-dynamic (QInt8 weights)"
   }
+ ],
+ "preprocess": {
+  "pre_resize": 448,
+  "pre_resample": "bicubic",
+  "color_constancy": "shades_of_gray",
+  "sog_power": 6,
+  "resample": "bilinear",
+  "mean": [
+   0.485,
+   0.456,
+   0.406
+  ],
+  "std": [
+   0.229,
+   0.224,
+   0.225
+  ]
+ },
+ "tta": [
+  "identity",
+  "hflip",
+  "vflip",
+  "transpose"
+ ],
+ "ensemble": "mean_softmax_then_log",
+ "temperature": 0.5972704769129323,
+ "mel_threshold": 0.33999999999999997,
+ "meta_schema": {
+  "localizations": [
+   "abdomen",
+   "acral",
+   "back",
+   "chest",
+   "ear",
+   "face",
+   "foot",
+   "genital",
+   "hand",
+   "lower extremity",
+   "neck",
+   "scalp",
+   "trunk",
+   "unknown",
+   "upper extremity"
+  ],
+  "meta_dim": 19,
+  "age_scale": 90.0,
+  "sex": [
+   "male",
+   "female"
+  ]
+ },
+ "occlusion": {
+  "member": "effnetv2_s",
+  "grid": 4
+ },
+ "validated_test_metrics": {
+  "n_test": 1975,
+  "accuracy": 0.8557,
+  "balanced_accuracy": 0.758,
+  "macro_f1": 0.7722,
+  "ece": 0.0289,
+  "mel_recall_at_threshold": 0.8534,
+  "malignant_auc": 0.9502,
+  "note": "Kaggle reference, argmax WITHOUT melanoma threshold"
+ },
+ "tta_execution": "one view per run (lower peak RAM)",
+ "validated_test_metrics_backend": {
+  "n_test": 1975,
+  "note": "backend config (EVA02 INT8, 4 views, T and threshold fixed), 0.34 melanoma threshold applied",
+  "accuracy": 0.8359,
+  "balanced_accuracy": 0.7536,
+  "macro_f1": 0.7624,
+  "mel_recall_at_threshold": 0.8534,
+  "malignant_auc": 0.95
+ }
 }

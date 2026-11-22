@@ -25,7 +25,7 @@
 
 | Action | Command | Notes |
 |---|---|---|
-| **Install Dependencies** | `.venv/bin/pip install -r backend/requirements.txt` | Locked virtual environment |
+| **Install Dependencies** | `cd backend && uv pip install -r pyproject.toml -r requirements-dev.txt` | Locked virtual environment |
 | **Run Frontend (Vercel Dev)** | `npx serve frontend` | Vercel Static Web Client on :3000 |
 | **Run REST API Server** | `cd backend && uvicorn src.api.main:app --port 8000 --reload` | FastAPI REST API on :8000 (/docs) |
 | **Run All Tests** | `pytest backend/tests/ -v` | Full test suite verification |
@@ -57,14 +57,13 @@ ai-derm-assistant/
 │   ├── src/                   # Core ML Engine, domain entities & services
 │   ├── checkpoints/           # Trained model weights (ONNX format)
 │   ├── tests/                 # Automated test gates (leakage, calibration, inference)
-│   ├── requirements.txt       # Backend dependencies
+│   ├── pyproject.toml         # Backend runtime dependencies (pinned) + Vercel entrypoint
 ├── frontend/                  # Vercel Web Presentation Layer (HTML/JS Stitch UI)
 ├── notebooks/                 # EDA, training, and ablation analysis
 ├── CONTEXT.md                 # Living workspace memory & active task state
 ├── AGENTS.md                  # Developer guidelines & architectural invariants
 ├── CHANGELOG.md               # Versioning & release history
-├── decisions.log              # Local Ratchet invariants (append-only)
-└── requirements.txt           # Version-pinned runtime dependencies
+└── decisions.log              # Local Ratchet invariants (append-only)
 ```
 
 ### 🚫 Forbidden Zones (Off-Limits Files — Hook Enforced)

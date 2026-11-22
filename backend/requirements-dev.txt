@@ -1,3 +1,4 @@
--r requirements.txt
+# Test-only tools. Runtime deps are in pyproject.toml:
+#   uv pip install -r pyproject.toml -r requirements-dev.txt
 pytest==9.2.0
 httpx==0.28.1

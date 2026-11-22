@@ -190,4 +190,4 @@ Every task follows a strict 4-step atomic verification cycle:
 - Upload cap is now 4 MB (Vercel request body limit 4.5 MB on Hobby).
 - Removed Render/Docker files: `render.yaml`, `backend/Dockerfile`, `backend/.dockerignore`, `.github/workflows/keepalive.yml` (pinging a serverless function only burns invocations).
 - Vercel Hobby limits (docs, Nov 2026): 2 GB / 1 vCPU, 300 s max duration, Python bundle 500 MB (large functions beta up to 5 GB). Cold starts reload the ~213 MB of models. Latency on 1 vCPU not measured yet.
-
+- Dependencies: Vercel installs from `backend/pyproject.toml` when it exists (an empty `[project]` left FastAPI uninstalled), so runtime pins moved there and `backend/requirements.txt` was removed. Tests: `uv pip install -r pyproject.toml -r requirements-dev.txt`.

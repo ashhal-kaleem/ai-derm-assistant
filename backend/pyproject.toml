@@ -1,5 +1,25 @@
-# Vercel config only. Dependencies live in requirements.txt (runtime) and
-# requirements-dev.txt (tests); Python version in .python-version.
+# Single source of backend runtime dependencies (Vercel installs from here).
+# Test-only tools live in requirements-dev.txt. Python version: .python-version.
+
+[project]
+name = "dermassist-backend"
+version = "3.0.0"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "onnxruntime==1.32.0",
+    "numpy==1.26.4",
+    "Pillow==13.0.0",
+    "opencv-python-headless==4.11.0.86",
+    "groq==1.7.0",
+    "pydantic==2.14.4",
+    "pydantic-settings==2.16.3",
+    "supabase==2.34.1",
+    "python-dotenv==1.2.4",
+    "fastapi==0.165.0",
+    "python-multipart==0.0.34",
+    "reportlab==5.1.0",
+    "uvicorn==0.54.0",
+]
 
 [tool.vercel]
 # FastAPI app instance for the Vercel Python runtime.

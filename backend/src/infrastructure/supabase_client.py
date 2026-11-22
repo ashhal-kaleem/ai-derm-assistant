@@ -1,11 +1,6 @@
 """Supabase Cloud Database & Storage Client Adapter for DermAssist AI."""
 
 import os
-try:
-    from dotenv import load_dotenv
-    load_dotenv(".env", override=True)
-except ImportError:
-    pass
 import logging
 logger = logging.getLogger(__name__)
 import uuid
@@ -40,6 +35,7 @@ class SupabaseCloudClient:
             try:
                 self.client = create_client(self.url, self.key)
             except Exception as e:
+                logger.error(f"Supabase client init failed: {e}")
                 self.client = None
 
     @property

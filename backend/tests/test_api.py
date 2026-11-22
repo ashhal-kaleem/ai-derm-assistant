@@ -23,22 +23,24 @@ def test_predict_endpoint_valid_image():
     buf.seek(0)
 
     files = {"file": ("test_lesion.jpg", buf, "image/jpeg")}
-    response = client.post("/api/v1/predict?generate_summary=false&save_to_cloud=false", files=files)
+    response = client.post("/predict?generate_summary=false&save_to_cloud=false", files=files)
 
     assert response.status_code == 200
     data = response.json()
-    assert "top_class" in data
-    assert "top_name" in data
-    assert "calibrated_confidence" in data
-    assert "probabilities" in data
+    assert "predicted_class" in data
+    assert "class_name" in data
+    assert "confidence" in data
     assert len(data["probabilities"]) == 7
-    assert data["saliency_heatmap_base64"] is not None
+    assert len(data["all_probs"]) == 7
+    assert data["heatmap_b64"].startswith("data:image/png;base64,")
+    for legacy in ("top_class", "saliency_heatmap_base64", "calibrated_confidence"):
+        assert legacy not in data
 
 
 def test_predict_endpoint_invalid_file_type():
     buf = io.BytesIO(b"Not an image")
     files = {"file": ("document.pdf", buf, "application/pdf")}
-    response = client.post("/api/v1/predict", files=files)
+    response = client.post("/predict", files=files)
     assert response.status_code == 400
 
 
@@ -51,7 +53,7 @@ def test_clinical_summary_endpoint():
         "temperature": 1.2,
         "uncertainty_score": 0.15,
     }
-    response = client.post("/api/v1/clinical-summary", json=payload)
+    response = client.post("/clinical-summary", json=payload)
     assert response.status_code == 200
     data = response.json()
     assert "clinical_summary" in data
@@ -59,7 +61,11 @@ def test_clinical_summary_endpoint():
 
 
 def test_history_endpoint():
-    response = client.get("/api/v1/history?limit=5")
+    response = client.get("/history?limit=5")
     assert response.status_code == 200
     data = response.json()
     assert isinstance(data, list)
+
+
+def test_legacy_api_v1_routes_removed():
+    assert client.post("/api/v1/predict").status_code == 404

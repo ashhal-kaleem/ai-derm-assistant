@@ -7,7 +7,7 @@ Audits:
 3. Admin Surface & Documentation Lockdown.
 4. Transport Security (HTTPS redirection, HSTS, CSP, X-Frame-Options, X-Content-Type-Options).
 5. CORS Policy Standards Compliance (W3C/Fetch standard wildcard check).
-6. Password & Cryptographic Security (scrypt with salt, constant-time compare).
+6. Admin key security (constant-time compare, admin routes fail closed).
 7. Database Lockdown & RLS Verification (no public update/delete policies).
 8. Daily Backup System Verification (backup script and GitHub Actions cron).
 9. Upload Security & DoS Resilience (magic bytes, 15MB cap, decompression bomb).
@@ -148,13 +148,8 @@ class SecurityAuditRunner:
             self.warn("No CORSMiddleware detected")
 
         # --- Pillar 6: Password & Cryptographic Security ---
-        print("\n6. Password & Cryptographic Security")
-        from src.core.security import hash_password, verify_password, verify_admin_key
-        test_pw = "ClinicalSecurityStandard#2026"
-        h_pw = hash_password(test_pw)
-        self.check("Password hashed using scrypt with cryptographically random salt", h_pw.startswith("scrypt$n=16384,r=8,p=1$"))
-        self.check("Password verification succeeds for correct secret", verify_password(test_pw, h_pw) is True)
-        self.check("Password verification rejects wrong secret", verify_password("WrongSecret", h_pw) is False)
+        print("\n6. Admin Key Security")
+        from src.core.security import verify_admin_key
         self.check("Admin key verification uses constant-time comparison", verify_admin_key("correct", "correct") is True and verify_admin_key("bad", "correct") is False)
 
         # --- Pillar 7: Database Lockdown & Row Level Security (RLS) ---

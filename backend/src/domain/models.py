@@ -107,7 +107,6 @@ class PredictionResult:
     inference_ms: float = 0.0
     saliency_heatmap_bytes: Optional[bytes] = None
     clinical_summary: Optional[str] = None
-    gemini_summary: Optional[str] = None
 
 
 @dataclass
@@ -122,7 +121,6 @@ class ScanRecord:
     uncertainty_score: float = 0.0
     risk_level: str = "BENIGN"
     clinical_summary: Optional[str] = None
-    gemini_summary: Optional[str] = None
     feedback: Optional[str] = None
     image_sha256: Optional[str] = None
     model_version: str = "unknown"
@@ -149,26 +147,3 @@ def categorize_uncertainty(uncertainty_score: float) -> str:
     elif uncertainty_score < 0.50:
         return "medium"
     return "high"
-
-
-@dataclass
-class LesionVisit:
-    visit_id: str = field(default_factory=lambda: str(uuid.uuid4()))
-    lesion_id: str = ""
-    date: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
-    predicted_class: str = ""
-    class_name: str = ""
-    confidence: float = 0.0
-    risk_level: str = "green"
-    risk_label: str = "Benign"
-    image_thumb: Optional[str] = None
-    llm_explanation: Optional[str] = None
-    notes: Optional[str] = None
-
-
-@dataclass
-class LesionEntity:
-    id: str = field(default_factory=lambda: str(uuid.uuid4()))
-    name: str = ""
-    created_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
-    visits: List[LesionVisit] = field(default_factory=list)

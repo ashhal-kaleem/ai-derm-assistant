@@ -26,23 +26,7 @@ class PredictionResponse(BaseModel):
     scan_id: Optional[str] = None
     quality: Optional[Dict[str, Any]] = None
 
-    # Backward-compatible v1.0 Fields
-    top_class: Optional[str] = None
-    top_name: Optional[str] = None
-    raw_confidence: Optional[float] = None
-    calibrated_confidence: Optional[float] = None
-    temperature: Optional[float] = 1.0
-    uncertainty_score: Optional[float] = 0.0
-    probabilities: Optional[List[ClassProbabilityResponse]] = None
-    saliency_heatmap_base64: Optional[str] = None
-    clinical_summary: Optional[str] = None
-
-
-class PatientMetadata(BaseModel):
-    age: Optional[int] = Field(None, ge=1, le=120, description="Patient age in years (1-120)")
-    sex: Optional[str] = Field(None, description="Patient biological sex ('male', 'female', 'other')")
-    anatomical_site: Optional[str] = Field(None, max_length=64, description="Lesion anatomical site")
-    history_of_melanoma: Optional[bool] = Field(None, description="Personal or familial history of melanoma")
+    probabilities: List[ClassProbabilityResponse] = Field(default_factory=list)
 
 
 class ClinicalSummaryRequest(BaseModel):

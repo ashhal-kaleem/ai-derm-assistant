@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.0.0] - Unreleased (branch Dev)
+
+### Changed
+- Backend serves only the v3 ensemble (EVA02 INT8, one view per run); API version 3.0.0.
+- `/clinical-summary` replaces `/api/v1/clinical-summary`; all other `/api/v1/*` aliases removed.
+- Prediction response drops v1 fields (`top_class`, `top_name`, `raw_confidence`, `calibrated_confidence`, `temperature`, `uncertainty_score`, `saliency_heatmap_base64`, `clinical_summary`); `probabilities` kept.
+- Groq calls: 8 s timeout, no retries, safer patient prompt.
+- Dockerfile: `$PORT`, non-root, healthcheck, LFS check. Pinned runtime requirements; dev requirements split out.
+
+### Added
+- One-at-a-time prediction slot (503 when busy) and per-IP rate limit (429).
+- Request id header and access log. Clinic search cache. Backend CI workflow.
+
+### Removed
+- Training-only code and deps (dataset split, temperature fitting, ECE, scipy, pandas, huggingface-hub), unused password hashing, `backend/render.yaml`, `load_dotenv(override=True)`.
+
+### Security
+- Admin routes fail closed without `ADMIN_API_KEY`. Upload read capped before full load. Inference errors no longer expose internals.
+
 ## [2.0.2] - 2026-10-16
 
 ### Fixed

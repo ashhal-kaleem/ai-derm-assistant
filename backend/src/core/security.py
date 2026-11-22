@@ -1,14 +1,11 @@
 """Security utilities for DermAssist AI.
 
 Provides:
-1. Cryptographically secure password hashing & constant-time verification (scrypt + HMAC).
-2. Admin credential verification.
-3. Image file payload validation (size capping & magic bytes verification).
+1. Admin credential verification (constant-time).
+2. Image file payload validation (size capping & magic bytes verification).
 """
 
-import hashlib
 import hmac
-import secrets
 from typing import Optional, Tuple
 from PIL import Image
 
@@ -20,59 +17,6 @@ Image.MAX_IMAGE_PIXELS = 25_000_000
 
 # Permitted dermatoscopic image formats
 ALLOWED_IMAGE_FORMATS = {"JPEG", "PNG", "WEBP"}
-
-
-def hash_password(plain_password: str) -> str:
-    """Hash a password using PBKDF2/scrypt with a unique cryptographically random salt.
-    
-    Format: scrypt$n=16384,r=8,p=1$<salt_hex>$<hash_hex>
-    """
-    if not plain_password:
-        raise ValueError("Password cannot be empty.")
-    
-    salt = secrets.token_bytes(16)
-    # Recommended OWASP parameters for scrypt: N=16384, r=8, p=1
-    derived = hashlib.scrypt(
-        plain_password.encode("utf-8"),
-        salt=salt,
-        n=16384,
-        r=8,
-        p=1,
-        maxmem=0
-    )
-    return f"scrypt$n=16384,r=8,p=1${salt.hex()}${derived.hex()}"
-
-
-def verify_password(plain_password: str, password_hash: str) -> bool:
-    """Verify a plain password against an scrypt hash using constant-time comparison."""
-    if not plain_password or not password_hash:
-        return False
-
-    try:
-        parts = password_hash.split("$")
-        if len(parts) != 4 or parts[0] != "scrypt":
-            return False
-
-        # Parse parameters
-        params = dict(item.split("=") for item in parts[1].split(","))
-        n = int(params["n"])
-        r = int(params["r"])
-        p = int(params["p"])
-        salt = bytes.fromhex(parts[2])
-        expected_hash = bytes.fromhex(parts[3])
-
-        candidate_hash = hashlib.scrypt(
-            plain_password.encode("utf-8"),
-            salt=salt,
-            n=n,
-            r=r,
-            p=p,
-            maxmem=0
-        )
-
-        return hmac.compare_digest(candidate_hash, expected_hash)
-    except Exception:
-        return False
 
 
 def verify_admin_key(provided_key: Optional[str], expected_key: Optional[str]) -> bool:

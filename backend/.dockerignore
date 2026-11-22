@@ -7,3 +7,8 @@ __pycache__
 .pytest_cache
 scratch/
 tests/
+.env
+.env.*
+!.env.example
+requirements-dev.txt
+conftest.py

@@ -1,14 +1,25 @@
+import logging
+import re
+import time
+import uuid
+
 from fastapi import FastAPI, status
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.requests import Request
 from starlette.responses import Response, RedirectResponse
 
 from src.api.routes import router
-from src.core.config import get_settings
+from src.core.config import APP_VERSION, get_settings
 from src.core.lifespan import lifespan
 from src.core.exceptions import register_exception_handlers
 
 settings = get_settings()
+
+logging.basicConfig(
+    level=getattr(logging, settings.LOG_LEVEL.upper(), logging.INFO),
+    format="%(asctime)s %(levelname)s %(name)s %(message)s",
+)
+access_logger = logging.getLogger("dermassist.access")
 
 # Lock documentation endpoints in production unless explicitly enabled via ENABLE_DOCS
 is_docs_enabled = settings.ENABLE_DOCS or (settings.ENVIRONMENT != "production")
@@ -19,7 +30,7 @@ openapi_url = "/openapi.json" if is_docs_enabled else None
 app = FastAPI(
     title="DermAssist AI — Clinical Inference API",
     description="Production skin lesion diagnostic support, ONNX inference, occlusion-sensitivity heatmaps, and Groq LPU clinical narrative advisory.",
-    version="2.0.1",
+    version=APP_VERSION,
     docs_url=docs_url,
     redoc_url=redoc_url,
     openapi_url=openapi_url,
@@ -40,7 +51,10 @@ app.add_middleware(
 
 @app.middleware("http")
 async def security_headers_and_https_middleware(request: Request, call_next):
-    """Enforce HTTPS redirection and attach enterprise-grade HTTP security headers."""
+    """Enforce HTTPS redirection, attach security headers, request id and access log."""
+    incoming_id = request.headers.get("x-request-id", "")
+    request_id = incoming_id if re.fullmatch(r"[A-Za-z0-9-]{1,64}", incoming_id) else uuid.uuid4().hex
+    started = time.perf_counter()
     # 1. Enforce HTTPS behind reverse proxy (Render / Cloudflare / Vercel)
     if (
         settings.FORCE_HTTPS
@@ -51,6 +65,12 @@ async def security_headers_and_https_middleware(request: Request, call_next):
         return RedirectResponse(url=str(url), status_code=status.HTTP_301_MOVED_PERMANENTLY)
 
     response: Response = await call_next(request)
+    response.headers["X-Request-ID"] = request_id
+    # Path only: query strings and bodies may hold patient data and are never logged.
+    access_logger.info(
+        f"{request.method} {request.url.path} {response.status_code} "
+        f"{(time.perf_counter() - started) * 1000:.0f}ms rid={request_id}"
+    )
 
     # 2. Strict Transport Security (HSTS - 2 years, subdomains, preload)
     response.headers["Strict-Transport-Security"] = "max-age=63072000; includeSubDomains; preload"

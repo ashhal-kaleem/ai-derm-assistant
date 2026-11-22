@@ -4,9 +4,12 @@ from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
+APP_VERSION = "3.0.0"  # v3 ensemble backend
+
+
 class Settings(BaseSettings):
     """Centralized Application Configuration (Single Source of Truth)."""
-    
+
     # Model & Inference
     # DermAssist v3 ensemble (ConvNeXt-V2-T + EfficientNetV2-S + EVA02-S).
     # checkpoints/v3/ holds model_v3.json (classes, preprocessing, temperature,
@@ -17,6 +20,7 @@ class Settings(BaseSettings):
     # Groq LPU Clinical Narrative (Secret masked in __repr__)
     GROQ_API_KEY: Optional[str] = Field(default=None, repr=False)
     GROQ_MODEL: str = "llama-3.3-70b-versatile"
+    GROQ_TIMEOUT_SECONDS: float = 8.0  # per request; on timeout the static summary is used
     
     # Supabase Persistence (Secret masked in __repr__)
     SUPABASE_URL: Optional[str] = None
@@ -30,9 +34,15 @@ class Settings(BaseSettings):
     FORCE_HTTPS: bool = True  # Enforce HTTPS redirection in production behind proxies
     MAX_UPLOAD_SIZE_MB: int = 15  # Max upload size in megabytes (DoS guard)
 
+    # Load protection (one 512 MB instance: one prediction at a time)
+    MAX_CONCURRENT_PREDICTIONS: int = 1
+    PREDICTION_QUEUE_TIMEOUT_SECONDS: float = 30.0  # wait for a free slot, then 503
+    RATE_LIMIT_PER_MINUTE: int = 10  # per client IP, for /predict and /clinical-summary
+
+    # Logging
+    LOG_LEVEL: str = "INFO"
+
     # Server / Runtime
-    APP_HOST: str = "0.0.0.0"
-    APP_PORT: int = 8000
     ENVIRONMENT: str = "production"
 
     @field_validator("ALLOWED_ORIGINS", mode="before")

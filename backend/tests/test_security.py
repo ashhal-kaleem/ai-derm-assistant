@@ -1,7 +1,6 @@
 """Unit and integration test suite for DermAssist AI security hardening.
 
 Verifies:
-1. Password hashing (scrypt) and constant-time verification.
 2. Admin credential verification with HMAC constant-time matching.
 3. Image payload validation (magic bytes, size limits, decompression bomb guard).
 4. HTTP Security Headers (HSTS, X-Content-Type-Options, X-Frame-Options, CSP).
@@ -19,8 +18,6 @@ from fastapi.testclient import TestClient
 from src.api.main import app
 from src.core.config import get_settings
 from src.core.security import (
-    hash_password,
-    verify_password,
     verify_admin_key,
     validate_image_payload,
     MAX_IMAGE_FILE_SIZE,
@@ -30,29 +27,6 @@ from src.core.security import (
 @pytest.fixture
 def client():
     return TestClient(app)
-
-
-def test_password_hashing_and_verification():
-    """Verify cryptographically secure password hashing and constant-time validation."""
-    password = "SuperSecretClinicalPassw0rd!#2026"
-    pwd_hash = hash_password(password)
-
-    # Must start with scrypt algorithm identifier
-    assert pwd_hash.startswith("scrypt$n=16384,r=8,p=1$")
-    assert len(pwd_hash.split("$")) == 4
-
-    # Verify correct password succeeds
-    assert verify_password(password, pwd_hash) is True
-
-    # Verify wrong password fails
-    assert verify_password("WrongPassword123!", pwd_hash) is False
-    assert verify_password("", pwd_hash) is False
-    assert verify_password(password, "invalid_hash_string") is False
-
-    # Verify unique salts generate distinct hashes for identical passwords
-    hash2 = hash_password(password)
-    assert pwd_hash != hash2
-    assert verify_password(password, hash2) is True
 
 
 def test_admin_key_verification():
@@ -149,3 +123,36 @@ def test_api_docs_lockdown():
     assert app.docs_url is None
     assert app.redoc_url is None
     assert app.openapi_url is None
+
+
+def test_admin_route_fails_closed_without_key(client):
+    """Admin routes are disabled (503) when ADMIN_API_KEY is not configured."""
+    settings = get_settings()
+    original_key = settings.ADMIN_API_KEY
+    try:
+        settings.ADMIN_API_KEY = None
+        res = client.get("/feedback/summary")
+        assert res.status_code == 503
+    finally:
+        settings.ADMIN_API_KEY = original_key
+
+
+def test_oversized_upload_rejected(client):
+    """Uploads over MAX_UPLOAD_SIZE_MB get 413 without running the model."""
+    settings = get_settings()
+    original = settings.MAX_UPLOAD_SIZE_MB
+    try:
+        settings.MAX_UPLOAD_SIZE_MB = 1
+        payload = b"\xff\xd8\xff" + b"0" * (2 * 1024 * 1024)
+        files = {"file": ("big.jpg", io.BytesIO(payload), "image/jpeg")}
+        res = client.post("/predict?generate_summary=false&save_to_cloud=false", files=files)
+        assert res.status_code == 413
+    finally:
+        settings.MAX_UPLOAD_SIZE_MB = original
+
+
+def test_request_id_header(client):
+    res = client.get("/health", headers={"X-Request-ID": "abc-123"})
+    assert res.headers["X-Request-ID"] == "abc-123"
+    res = client.get("/health", headers={"X-Request-ID": "bad id\ninjected"})
+    assert res.headers["X-Request-ID"] != "bad id\ninjected"

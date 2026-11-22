@@ -3,11 +3,7 @@
 import numpy as np
 import pytest
 
-from src.domain.calibration import (
-    apply_temperature_scaling,
-    compute_ece,
-    optimize_temperature,
-)
+from src.domain.calibration import apply_temperature_scaling
 
 
 def test_temperature_scaling_probability_properties():
@@ -35,36 +31,3 @@ def test_temperature_scaling_smoothing_effect():
     # Smallest class in smooth distribution should be higher than in sharp
     assert smooth_probs[2] > sharp_probs[2]
 
-
-def test_compute_ece():
-    """Verify ECE calculation for perfectly calibrated and miscalibrated models."""
-    n_samples = 60
-    n_classes = 3
-    
-    # Perfectly calibrated case: 100% confidence, 100% accurate
-    perfect_probs = np.zeros((n_samples, n_classes))
-    perfect_probs[:, 0] = 1.0
-    labels = np.zeros(n_samples, dtype=int)
-    
-    ece_perfect = compute_ece(perfect_probs, labels, n_bins=5)
-    assert np.isclose(ece_perfect, 0.0, atol=1e-4)
-
-    # Completely wrong case: 100% confident on class 0, but all labels are class 1
-    wrong_labels = np.ones(n_samples, dtype=int)
-    ece_wrong = compute_ece(perfect_probs, wrong_labels, n_bins=5)
-    assert ece_wrong > 0.9
-
-
-def test_optimize_temperature():
-    """Verify temperature optimization converges to optimal temperature T*."""
-    np.random.seed(42)
-    n_samples = 100
-    n_classes = 7
-    
-    # Generate overconfident synthetic logits
-    raw_logits = np.random.randn(n_samples, n_classes).astype(np.float32) * 4.0
-    labels = np.random.randint(0, n_classes, size=n_samples)
-    
-    opt_temp = optimize_temperature(raw_logits, labels)
-    assert opt_temp > 0.0
-    assert isinstance(opt_temp, float)

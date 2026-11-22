@@ -153,7 +153,7 @@ Every task follows a strict 4-step atomic verification cycle:
 - Transport & HTTPS Everywhere: Added `security_headers_and_https_middleware` enforcing HSTS (2 years, subdomains, preload), X-Content-Type-Options `nosniff`, X-Frame-Options `DENY`, Referrer-Policy, CSP, and automated 301 HTTPS redirection for `x-forwarded-proto: http`. Configured edge security headers in `frontend/vercel.json`.
 - CORS Hardening: Disallowed `allow_credentials=True` when wildcard `*` origins are used to comply with W3C/Fetch standards and prevent CSRF/credential leakage.
 - Admin Surface & Docs Lockdown: Confirmed zero rogue admin pages; locked `/docs`, `/redoc`, and `/openapi.json` in production unless explicitly enabled via `ENABLE_DOCS`. Gated administrative endpoints (`/feedback/summary`) behind `X-Admin-Key` with constant-time verification.
-- Password Hashing Utility: Implemented OWASP-compliant `scrypt` salted password hashing with `hmac.compare_digest` in `backend/src/core/security.py`.
+- Password Hashing Utility: removed on 2026-11-21 (no route used it; the app has no user login by decision).
 - Database Lockdown: Fixed `docs/supabase_schema.sql` by dropping dangerous public UPDATE and DELETE policies. Created `docs/security_lock_database.sql` for live RLS lockdown and restricted Storage buckets to validated image MIME types (15MB cap).
 - Daily Backup System: Created `scripts/backup_supabase.py` with 30-day retention pruning and `.github/workflows/daily_backup.yml` running every midnight UTC (`0 0 * * *`).
 - Upload Security: Added magic byte verification and 15MB file cap with Pillow decompression bomb protection (`MAX_IMAGE_PIXELS <= 25,000,000`). Sanitized API error outputs.
@@ -171,3 +171,16 @@ Every task follows a strict 4-step atomic verification cycle:
 - Verification: backend output matches training logits on 21 test images (21/21 same class, max logit diff 0.005).
 - EVA02-S now runs as dynamic INT8 (`eva02_small_int8.onnx`, made by `training/v3/quantize_onnx.py`); ConvNeXt and EffNet stay fp32. Each TTA view runs as its own ONNX call. Full test re-run of the backend config (EVA02 INT8, 4 views): accuracy 83.6%, balanced accuracy 75.4%, macro F1 0.762, melanoma recall 85.3%, AUC 0.950 (no loss vs fp32).
 - Measured on 2 CPU cores: peak RAM 439 MB (was 795 MB, Render limit 512 MB); ~6.4 s per prediction including the 4x4 occlusion heatmap (~3.1 s model, ~3.3 s heatmap). The 500 ms target is not met; latency work is still open.
+
+## 2026-11-21 Backend production hardening (branch Dev)
+- Decisions (Fardin): no user login/auth; every uploaded scan is saved to Supabase directly, no consent prompt.
+- Load protection: one model run at a time (`MAX_CONCURRENT_PREDICTIONS=1`, queue wait 30 s then 503) so parallel requests cannot exceed 512 MB; per-IP rate limit 10/min on `/predict` and `/clinical-summary` (429). In-process only; needs a shared store for more than one instance.
+- Admin routes fail closed (503) when `ADMIN_API_KEY` is unset. Upload read is capped at `MAX_UPLOAD_SIZE_MB` (413). Inference errors no longer leak exception text.
+- Removed `load_dotenv(override=True)` from the Supabase client (it overrode real env vars). Settings read `.env` themselves.
+- Groq: 8 s timeout, no SDK retries, failures logged; prompt no longer poses as a dermatologist and always tells the patient to confirm with one. NOTE: the configured Groq models (`llama-3.3-70b-versatile`, `llama-3.1-8b-instant`, `gemma2-9b-it`) are shut down on Groq free/dev tier (console.groq.com/docs/deprecations), so summaries fall back to static text until the model is changed.
+- Clinic search: 10 s per Overpass mirror (was 25 s), 10-minute cache.
+- Logging with request id (`X-Request-ID`) and an access log of method, path, status, ms (no bodies or query strings).
+- Removed legacy: all `/api/v1/*` duplicate routes (frontend uses plain paths), v1 response fields except `probabilities`, `clinical-summary` moved to `/clinical-summary`; training-only code (`domain/dataset.py`, temperature fitting, ECE), unused password hashing, unused `LesionVisit`/`LesionEntity`, `APP_HOST`/`APP_PORT`, `backend/render.yaml` (root `render.yaml` is the one Render reads); deps `scipy`, `pandas`, `huggingface-hub`; internal `gemini_summary` field (DB column keeps its old name for now).
+- Deploy: pinned `requirements.txt` (runtime) + `requirements-dev.txt` (pytest, httpx); Dockerfile uses `$PORT`, non-root user, HEALTHCHECK, fails the build on LFS pointer files; Render build also fails on LFS pointers; `.dockerignore` excludes `.env`. CI: `.github/workflows/backend-tests.yml` runs pytest with LFS checkout.
+- Still open: Supabase tables/bucket are publicly readable (RLS allows public SELECT, bucket public); `GET /history` lists every user's scans; lesion ids come from the lesion name; Groq model choice; hosting plan; latency.
+

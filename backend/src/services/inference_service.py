@@ -138,5 +138,4 @@ class InferenceService:
             inference_ms=(time.perf_counter() - start_time) * 1000.0,
             saliency_heatmap_bytes=heatmap_png,
             clinical_summary=None,
-            gemini_summary=None
         )

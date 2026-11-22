@@ -120,9 +120,9 @@ class ReportService:
         story.append(HRFlowable(width="100%", thickness=1.5, color=colors.HexColor("#0D47A1"), spaceAfter=10, spaceBefore=4))
 
         # 2. Key Findings Summary Table
-        class_name = prediction.get("class_name") or prediction.get("top_name") or "Skin Lesion"
-        class_code = (prediction.get("predicted_class") or prediction.get("top_class") or "unk").upper()
-        conf = float(prediction.get("confidence") or prediction.get("calibrated_confidence") or 0.0)
+        class_name = prediction.get("class_name") or "Skin Lesion"
+        class_code = (prediction.get("predicted_class") or "unk").upper()
+        conf = float(prediction.get("confidence") or 0.0)
         risk_level = str(prediction.get("risk_level") or "green").lower()
         risk_label = prediction.get("risk_label") or ("See doctor urgently" if risk_level == "red" else ("Monitor" if risk_level == "yellow" else "Benign"))
 
@@ -155,7 +155,7 @@ class ReportService:
 
         # 3. Visual Evidence (Photo + occlusion-sensitivity heatmap side-by-side)
         orig_img_flow = self._prepare_image_flowable(original_image_b64 or prediction.get("image_b64"))
-        heat_img_flow = self._prepare_image_flowable(heatmap_b64 or prediction.get("heatmap_b64") or prediction.get("saliency_heatmap_base64"))
+        heat_img_flow = self._prepare_image_flowable(heatmap_b64 or prediction.get("heatmap_b64"))
 
         if orig_img_flow or heat_img_flow:
             story.append(Paragraph("Visual Evidence & Explainability (Occlusion Sensitivity)", self.heading_style))
@@ -179,7 +179,7 @@ class ReportService:
                 story.append(Spacer(1, 8))
 
         # 4. Clinical Advisory Narrative (Groq LPU)
-        explanation = prediction.get("llm_explanation") or prediction.get("clinical_summary")
+        explanation = prediction.get("llm_explanation")
         if explanation:
             story.append(Paragraph("Clinical Analysis & Patient Guidance", self.heading_style))
             # Safely format markdown for ReportLab Paragraph XML parser

@@ -6,7 +6,10 @@ services:
     rootDir: backend
     healthCheckPath: /health
     region: oregon
-    buildCommand: pip install -r requirements.txt
+    # Model files are Git LFS objects: fail the build loudly if only pointer files arrived.
+    buildCommand: >-
+      pip install -r requirements.txt &&
+      python -c "import pathlib,sys; bad=[p.name for p in pathlib.Path('checkpoints/v3').glob('*.onnx') if p.stat().st_size < 1_000_000]; sys.exit('LFS pointer files: %s' % bad if bad else 0)"
     startCommand: uvicorn src.api.main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: PYTHON_VERSION

@@ -37,7 +37,7 @@ def test_predict_with_patient_metadata():
     }
 
     response = client.post(
-        "/api/v1/predict?generate_summary=true&save_to_cloud=false",
+        "/predict?generate_summary=true&save_to_cloud=false",
         files=files,
         data=data,
     )
@@ -57,7 +57,7 @@ def test_predict_without_patient_metadata_backward_compatible():
 
     files = {"file": ("test_mole.jpg", buf, "image/jpeg")}
     response = client.post(
-        "/api/v1/predict?generate_summary=true&save_to_cloud=false",
+        "/predict?generate_summary=true&save_to_cloud=false",
         files=files,
     )
     assert response.status_code == 200
@@ -67,7 +67,7 @@ def test_predict_without_patient_metadata_backward_compatible():
 
 
 def test_clinical_summary_endpoint_with_metadata():
-    """Verify /api/v1/clinical-summary accepts metadata and incorporates it in the response."""
+    """Verify /clinical-summary accepts metadata and incorporates it in the response."""
     payload = {
         "top_class": "mel",
         "top_name": "Melanoma",
@@ -80,7 +80,7 @@ def test_clinical_summary_endpoint_with_metadata():
         "anatomical_site": "Upper Back",
         "history_of_melanoma": True,
     }
-    response = client.post("/api/v1/clinical-summary", json=payload)
+    response = client.post("/clinical-summary", json=payload)
     assert response.status_code == 200
     data = response.json()
     assert "clinical_summary" in data

@@ -3,6 +3,8 @@
 import json
 import logging
 import math
+import threading
+import time
 import urllib.parse
 import urllib.request
 from typing import Any, Dict, List, Tuple
@@ -10,6 +12,9 @@ from typing import Any, Dict, List, Tuple
 logger = logging.getLogger("dermassist.geolocation")
 
 MAX_RESULTS = 12
+MIRROR_TIMEOUT_SECONDS = 10.0  # per mirror; worst case ~30 s over 3 mirrors
+CACHE_TTL_SECONDS = 600.0  # identical searches (~100 m grid) reuse the result
+CACHE_MAX_ENTRIES = 256
 DERM_KEYWORDS = ("derma", "skin", "cutaneous", "laser", "aesthetic", "cosmetic")
 
 
@@ -59,10 +64,14 @@ class GeolocationService:
         "https://overpass.private.coffee/api/interpreter",
     )
 
+    def __init__(self) -> None:
+        self._cache: Dict[Tuple[float, float, int], Tuple[float, List[Dict[str, Any]]]] = {}
+        self._cache_lock = threading.Lock()
+
     def _build_query(self, lat: float, lon: float, radius_m: int) -> str:
         around = f"(around:{radius_m},{lat},{lon})"
         return f"""
-[out:json][timeout:20];
+[out:json][timeout:10];
 (
   nwr["healthcare"="dermatology"]{around};
   nwr["healthcare:speciality"~"dermatolog",i]{around};
@@ -83,7 +92,7 @@ out center tags;
         for url in self.OVERPASS_URLS:
             try:
                 req = urllib.request.Request(url, data=data, headers=headers)
-                with urllib.request.urlopen(req, timeout=25.0) as response:
+                with urllib.request.urlopen(req, timeout=MIRROR_TIMEOUT_SECONDS) as response:
                     return json.loads(response.read().decode("utf-8"))
             except Exception as exc:  # try the next mirror
                 logger.warning(f"Overpass mirror {url} failed: {exc}")
@@ -96,6 +105,13 @@ out center tags;
         Raises ClinicSearchError when the map data source can't be reached.
         """
         radius_m = int(min(max(1.0, float(radius_km)), 50.0) * 1000)
+        cache_key = (round(float(lat), 3), round(float(lon), 3), radius_m)
+        now = time.monotonic()
+        with self._cache_lock:
+            hit = self._cache.get(cache_key)
+            if hit and now - hit[0] < CACHE_TTL_SECONDS:
+                return [dict(p) for p in hit[1]]
+
         result = self._query(self._build_query(lat, lon, radius_m))
 
         seen: set = set()
@@ -130,4 +146,9 @@ out center tags;
             }))
 
         places.sort(key=lambda p: (not p[0], p[1]))
-        return [p[2] for p in places[:MAX_RESULTS]]
+        clinics = [p[2] for p in places[:MAX_RESULTS]]
+        with self._cache_lock:
+            if len(self._cache) >= CACHE_MAX_ENTRIES:
+                self._cache.pop(next(iter(self._cache)))
+            self._cache[cache_key] = (now, clinics)
+        return [dict(p) for p in clinics]

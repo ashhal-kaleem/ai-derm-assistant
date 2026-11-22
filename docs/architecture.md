@@ -98,7 +98,6 @@ sequenceDiagram
 | **Clinical Intelligence**| Groq LPU API (`groq`) | `^0.1.1` | Free-tier Groq Llama 3.3 70B for structured patient advice |
 | **Cloud Database** | Supabase (`supabase-py`) | Cloud Serverless | Cloud-hosted PostgreSQL, zero local database storage |
 | **Cloud Media Storage** | Supabase Storage (`scans` bucket) | Cloud Object Store | Remote image & heatmap storage, zero local disk files |
-| **Remote Model Stream** | HuggingFace Hub (`huggingface_hub`) | Cloud Artifact | Dynamic model streaming on boot, zero local weight files |
 | **Web Presentation** | Streamlit | `^1.32.0` | Python-native, reactive, interactive medical dashboard |
 
 ---
@@ -183,12 +182,20 @@ src/
 | `SUPABASE_KEY` | Required | `eyJ...` | Supabase Anon/Service API Key |
 | `MODEL_V3_DIR` | Optional | `backend/checkpoints/v3` | Folder with `model_v3.json` and the 3 member `.onnx` files |
 | `ONNX_THREADS` | Optional | `2` | ONNX Runtime threads per member |
-| `APP_PORT` | Optional | `8501` | Streamlit server port |
+| `PORT` | Set by host | `8000` (Docker) | Port uvicorn binds to (Render sets it) |
+| `ADMIN_API_KEY` | Optional | `None` | Enables `/feedback/summary`; without it admin routes return 503 |
+| `ALLOWED_ORIGINS` | Recommended | `*` | Comma-separated frontend origins for CORS |
+| `MAX_UPLOAD_SIZE_MB` | Optional | `15` | Upload cap (413 above it) |
+| `MAX_CONCURRENT_PREDICTIONS` | Optional | `1` | Model runs at once (512 MB instance: keep 1) |
+| `PREDICTION_QUEUE_TIMEOUT_SECONDS` | Optional | `30` | Wait for a free slot, then 503 |
+| `RATE_LIMIT_PER_MINUTE` | Optional | `10` | Per client IP on `/predict` and `/clinical-summary` (429 above it) |
+| `GROQ_TIMEOUT_SECONDS` | Optional | `8` | Per Groq call; static summary on failure |
+| `LOG_LEVEL` | Optional | `INFO` | Log level (access log: method, path, status, ms, request id; never bodies) |
 
 ### 6.2 Operational Healthcheck Probe
 ```bash
 # Verify app is responding and model weights are initialized
-curl -sI http://localhost:8501/_stcore/health
+curl -s http://localhost:8000/health
 ```
 
 ---

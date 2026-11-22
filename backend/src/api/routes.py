@@ -1,7 +1,6 @@
 import base64
 import io
 import logging
-import os
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 from PIL import Image, ImageOps
@@ -18,7 +17,8 @@ from src.api.dependencies import (
     get_feedback_service,
     verify_admin_access,
 )
-from src.core.config import get_settings
+from src.core.config import APP_VERSION, get_settings
+from src.core.rate_limit import enforce_rate_limit, prediction_slot
 from src.core.security import validate_image_payload
 from src.api.schemas import (
     ClassProbabilityResponse,
@@ -37,7 +37,6 @@ from src.api.schemas import (
     FeedbackResponse,
 )
 from src.domain.models import (
-    FeedbackType,
     PredictionResult,
     RiskLevel,
     categorize_uncertainty,
@@ -55,8 +54,32 @@ from src.services.quality_service import assess_image_quality
 logger = logging.getLogger("dermassist.routes")
 
 MAX_IMAGE_SIDE = 1024
+ALLOWED_SEXES = ("male", "female", "other")
 
 router = APIRouter()
+
+
+def build_patient_metadata(
+    age: Optional[int],
+    sex: Optional[str],
+    anatomical_site: Optional[str],
+    history_of_melanoma: Optional[bool] = None,
+) -> Dict[str, Any]:
+    """Validated, PII-safe patient context (never logged). Unknown values are dropped."""
+    meta: Dict[str, Any] = {}
+    if age is not None and 1 <= age <= 120:
+        meta["age"] = age
+    if sex:
+        norm_sex = sex.strip().lower()
+        if norm_sex in ALLOWED_SEXES:
+            meta["sex"] = norm_sex
+    if anatomical_site:
+        clean_site = anatomical_site.strip()
+        if clean_site:
+            meta["anatomical_site"] = clean_site[:64]
+    if history_of_melanoma is not None:
+        meta["history_of_melanoma"] = bool(history_of_melanoma)
+    return meta
 
 @router.api_route("/", methods=["GET", "HEAD"], tags=["Discovery"])
 def api_root():
@@ -65,11 +88,13 @@ def api_root():
     docs_status = "/docs" if (settings.ENABLE_DOCS or settings.ENVIRONMENT != "production") else "disabled_in_production"
     return {
         "service": "DermAssist AI — Clinical Inference Engine",
-        "version": "2.0.2",
+        "version": APP_VERSION,
         "status": "operational",
         "docs_url": docs_status,
         "endpoints": {
             "predict": "POST /predict",
+            "feedback": "POST /feedback",
+            "clinical_summary": "POST /clinical-summary",
             "report": "POST /report",
             "history": "POST /history",
             "lesion_timeline": "GET /history/{lesion_id}",
@@ -100,13 +125,12 @@ def health_check():
     return HealthResponse(
         status="healthy" if onnx_loaded else "degraded",
         onnx_model_loaded=onnx_loaded,
-        groq_configured=bool(os.environ.get("GROQ_API_KEY")),
+        groq_configured=bool(get_settings().GROQ_API_KEY),
         supabase_configured=supabase_ok,
         timestamp=datetime.now(timezone.utc).isoformat(),
     )
 
-@router.post("/predict", response_model=PredictionResponse, tags=["Inference"])
-@router.post("/api/v1/predict", response_model=PredictionResponse, tags=["Inference"])
+@router.post("/predict", response_model=PredictionResponse, tags=["Inference"], dependencies=[Depends(enforce_rate_limit)])
 async def predict_lesion(
     file: UploadFile = File(..., description="Dermatoscopic skin lesion image file (JPEG/PNG)"),
     generate_summary: bool = Query(True, description="Whether to generate Groq LPU clinical advice"),
@@ -129,13 +153,15 @@ async def predict_lesion(
             detail="Invalid file type. Please upload a valid image (JPEG/PNG).",
         )
 
-    contents = await file.read()
-    is_valid, validation_err = validate_image_payload(contents)
+    # Read at most limit+1 bytes so an oversized upload is never fully loaded.
+    max_bytes = get_settings().MAX_UPLOAD_SIZE_MB * 1024 * 1024
+    contents = await file.read(max_bytes + 1)
+    is_valid, validation_err = validate_image_payload(contents, max_bytes=max_bytes)
     if not is_valid:
         err_msg = validation_err or "Invalid image payload."
         if "exceeds" in err_msg:
             raise HTTPException(
-                status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                status_code=status.HTTP_413_CONTENT_TOO_LARGE,
                 detail=err_msg,
             )
         raise HTTPException(
@@ -173,18 +199,24 @@ async def predict_lesion(
 
     # Patient metadata feeds the v3 model (age, sex, anatomical site); missing
     # values are encoded exactly like missing values in training.
+    patient_meta = build_patient_metadata(age, sex, anatomical_site, history_of_melanoma)
     model_metadata: Dict[str, Any] = {
-        "age": age if age is not None and 1 <= age <= 120 else None,
-        "sex": sex.strip().lower() if sex else None,
-        "anatomical_site": anatomical_site.strip()[:64] if anatomical_site else None,
+        "age": patient_meta.get("age"),
+        "sex": patient_meta.get("sex"),
+        "anatomical_site": patient_meta.get("anatomical_site"),
     }
 
     try:
-        prediction = await run_in_threadpool(inference_service.predict, image, model_metadata)
+        # One model run at a time keeps the instance inside its memory limit.
+        async with prediction_slot():
+            prediction = await run_in_threadpool(inference_service.predict, image, model_metadata)
+    except HTTPException:
+        raise
     except Exception as exc:
+        logger.error(f"Inference failed: {exc}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Inference execution failed: {str(exc)}",
+            detail="Image analysis failed. Please try again later.",
         )
 
     # 1. Map to PRD v2.0 3-Tier Risk Badge (green / yellow / red)
@@ -200,21 +232,6 @@ async def predict_lesion(
     v2_uncertainty = categorize_uncertainty(prediction.uncertainty_score)
     probs_by_code = {p.code: float(p.probability) for p in prediction.probabilities}
     all_probs = [probs_by_code.get(c, 0.0) for c in CLASS_NAMES]
-
-    # Validate and structure optional patient metadata (PII-safe, unlogged)
-    patient_meta: Dict[str, Any] = {}
-    if age is not None and 1 <= age <= 120:
-        patient_meta["age"] = age
-    if sex:
-        norm_sex = sex.strip().lower()
-        if norm_sex in ("male", "female", "other"):
-            patient_meta["sex"] = norm_sex
-    if anatomical_site:
-        clean_site = anatomical_site.strip()
-        if clean_site:
-            patient_meta["anatomical_site"] = clean_site[:64]
-    if history_of_melanoma is not None:
-        patient_meta["history_of_melanoma"] = bool(history_of_melanoma)
 
     # 2. Generate Groq clinical advisory summary
     clinical_summary = None
@@ -287,21 +304,11 @@ async def predict_lesion(
             "skin_detected": quality.skin_detected,
             "skin_fraction": quality.skin_fraction,
         },
-        # Backward-compatible v1.0 Fields
-        top_class=prediction.top_class,
-        top_name=prediction.top_name,
-        raw_confidence=prediction.raw_confidence,
-        calibrated_confidence=prediction.calibrated_confidence,
-        temperature=prediction.temperature,
-        uncertainty_score=prediction.uncertainty_score,
         probabilities=probs_response,
-        saliency_heatmap_base64=heatmap_b64,
-        clinical_summary=clinical_summary,
     )
 
 
 @router.post("/feedback", response_model=FeedbackResponse, tags=["Monitoring"])
-@router.post("/api/v1/feedback", response_model=FeedbackResponse, tags=["Monitoring"])
 def submit_feedback(
     payload: FeedbackRequest,
     feedback_service: FeedbackService = Depends(get_feedback_service),
@@ -321,7 +328,6 @@ def feedback_summary(
 
 
 @router.post("/report", response_model=PDFReportResponse, tags=["Reports"])
-@router.post("/api/v1/report", response_model=PDFReportResponse, tags=["Reports"])
 def generate_pdf_report(
     payload: PDFReportRequest,
     report_service: ReportService = Depends(get_report_service),
@@ -344,7 +350,6 @@ def generate_pdf_report(
 
 
 @router.get("/history", tags=["History"])
-@router.get("/api/v1/history", tags=["History"])
 def get_scan_history(
     limit: int = Query(10, ge=1, le=100),
     history_service: HistoryService = Depends(get_history_service),
@@ -354,7 +359,6 @@ def get_scan_history(
 
 
 @router.post("/history", response_model=CreateHistoryResponse, tags=["History"])
-@router.post("/api/v1/history", response_model=CreateHistoryResponse, tags=["History"])
 def create_longitudinal_visit(
     payload: CreateHistoryRequest,
     history_service: HistoryService = Depends(get_history_service),
@@ -372,7 +376,6 @@ def create_longitudinal_visit(
 
 
 @router.get("/history/{lesion_id}", response_model=LesionHistoryResponse, tags=["History"])
-@router.get("/api/v1/history/{lesion_id}", response_model=LesionHistoryResponse, tags=["History"])
 def get_lesion_timeline(
     lesion_id: str,
     history_service: HistoryService = Depends(get_history_service),
@@ -390,7 +393,6 @@ def get_lesion_timeline(
 
 
 @router.get("/clinics", response_model=ClinicSearchResponse, tags=["Geolocation"])
-@router.get("/api/v1/clinics", response_model=ClinicSearchResponse, tags=["Geolocation"])
 def find_nearby_clinics(
     lat: float = Query(..., description="User latitude"),
     lon: float = Query(..., description="User longitude"),
@@ -412,7 +414,7 @@ def find_nearby_clinics(
     return ClinicSearchResponse(clinics=[ClinicItem(**c) for c in raw_clinics])
 
 
-@router.post("/api/v1/clinical-summary", response_model=ClinicalSummaryResponse, tags=["Advisory"])
+@router.post("/clinical-summary", response_model=ClinicalSummaryResponse, tags=["Advisory"], dependencies=[Depends(enforce_rate_limit)])
 async def generate_summary_endpoint(
     payload: ClinicalSummaryRequest,
     groq_service: GroqService = Depends(get_groq_service),
@@ -436,19 +438,9 @@ async def generate_summary_endpoint(
         probabilities=[],
     )
 
-    patient_meta: Dict[str, Any] = {}
-    if payload.age is not None and 1 <= payload.age <= 120:
-        patient_meta["age"] = payload.age
-    if payload.sex:
-        norm_sex = payload.sex.strip().lower()
-        if norm_sex in ("male", "female", "other"):
-            patient_meta["sex"] = norm_sex
-    if payload.anatomical_site:
-        clean_site = payload.anatomical_site.strip()
-        if clean_site:
-            patient_meta["anatomical_site"] = clean_site[:64]
-    if payload.history_of_melanoma is not None:
-        patient_meta["history_of_melanoma"] = bool(payload.history_of_melanoma)
+    patient_meta = build_patient_metadata(
+        payload.age, payload.sex, payload.anatomical_site, payload.history_of_melanoma
+    )
 
     summary_text = await run_in_threadpool(
         groq_service.generate_clinical_summary,
